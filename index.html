@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<link rel="preconnect" href="https://viharamba-3dc5c-default-rtdb.firebaseio.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+<title>Viharamba Control Room</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+<style>
+:root{
+  --ink:#221D17; --ink-soft:#4A4238;
+  --gold:#C69A46; --gold-deep:#A87F32; --gold-tint:#F3E7CE;
+  --ivory:#FAF7F1; --card:#FFFFFF;
+  --line:#E9E1D2; --muted:#8A8072;
+  --danger:#B4432E; --ok:#3E7A55;
+  --r:14px; --r-sm:9px;
+  --shadow:0 8px 24px rgba(34,29,23,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:'Inter',sans-serif;background:var(--ivory);color:var(--ink);overflow-x:hidden;}
+h1,h2,h3,.disp{font-family:'Sora',sans-serif;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:inherit;font-size:0.95rem;}
+img{max-width:100%;display:block;}
+::-webkit-scrollbar{display:none;}
+
+/* ---------- LOCK SCREEN ---------- */
+#lock{position:fixed;inset:0;background:linear-gradient(160deg,#221D17,#3A2F22);display:flex;align-items:center;justify-content:center;z-index:999;padding:24px;}
+.lock-card{background:var(--card);border-radius:20px;padding:36px 28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.4);text-align:center;}
+.lock-mark{width:56px;height:56px;border-radius:50%;background:var(--gold-tint);color:var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 16px;}
+.lock-card h1{font-size:1.3rem;margin-bottom:4px;}
+.lock-card p{color:var(--muted);font-size:0.85rem;margin-bottom:22px;}
+.lock-card input{width:100%;padding:14px 16px;border:1.5px solid var(--line);border-radius:var(--r-sm);margin-bottom:14px;text-align:center;letter-spacing:2px;font-size:1.05rem;}
+.lock-card input:focus{outline:none;border-color:var(--gold);}
+.lock-btn{width:100%;padding:14px;background:var(--ink);color:#fff;border-radius:var(--r-sm);font-weight:600;font-size:0.95rem;}
+.lock-err{color:var(--danger);font-size:0.8rem;margin-top:10px;min-height:16px;}
+
+/* ---------- APP SHELL ---------- */
+#app{display:none;min-height:100%;padding-bottom:40px;}
+header.top{background:var(--ink);color:#fff;padding:18px 20px 16px;position:sticky;top:0;z-index:50;}
+.top-row{display:flex;align-items:center;justify-content:space-between;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:34px;height:34px;border-radius:9px;background:var(--gold);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;}
+.brand h1{font-size:1.05rem;letter-spacing:0.3px;}
+.brand span{display:block;font-size:0.7rem;color:#C9BFAE;font-weight:400;}
+.top-actions{display:flex;gap:8px;}
+.icon-btn{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.9rem;}
+.icon-btn:active{background:rgba(255,255,255,0.2);}
+
+.tabbar{display:flex;gap:8px;overflow-x:auto;padding:14px 16px 0;background:var(--ink);}
+.tab-pill{flex:0 0 auto;padding:9px 16px;border-radius:999px;background:rgba(255,255,255,0.08);color:#D8CEBC;font-size:0.82rem;font-weight:600;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.tab-pill.active{background:var(--gold);color:var(--ink);}
+.tabbar-spacer{height:16px;}
+
+main{padding:18px 16px 100px;max-width:640px;margin:0 auto;}
+.view{display:none;}
+.view.active{display:block;animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-head h2{font-size:1.15rem;}
+.count-chip{background:var(--gold-tint);color:var(--gold-deep);font-size:0.78rem;font-weight:700;padding:3px 11px;border-radius:999px;}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin-bottom:12px;}
+.item-row{display:flex;gap:12px;align-items:center;}
+.thumb{width:60px;height:60px;border-radius:10px;object-fit:cover;background:var(--gold-tint);flex:0 0 60px;}
+.thumb.wide{width:84px;height:48px;flex:0 0 84px;border-radius:8px;}
+.item-info{flex:1;min-width:0;}
+.item-info h3{font-size:0.95rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-info p{font-size:0.78rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-actions{display:flex;gap:6px;flex:0 0 auto;}
+.mini-btn{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;}
+.mini-btn.edit{background:#EFF1EC;color:#3E5A44;}
+.mini-btn.del{background:#F7E7E3;color:var(--danger);}
+.mini-btn.tog{background:#EEE9DC;color:var(--gold-deep);}
+.mini-btn.tog.on{background:var(--ok);color:#fff;}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty i{font-size:2rem;margin-bottom:10px;color:var(--line);display:block;}
+.empty p{font-size:0.85rem;}
+
+.subhead{font-size:0.72rem;letter-spacing:0.5px;color:var(--gold-deep);font-weight:700;margin:22px 0 10px;text-transform:uppercase;}
+.subhead:first-child{margin-top:0;}
+
+/* FAB */
+.fab{position:fixed;right:18px;bottom:26px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--ink);font-size:1.4rem;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(198,154,70,0.5);z-index:60;}
+.fab:active{transform:scale(0.94);}
+
+/* MODAL / SHEET */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(20,17,13,0.55);display:none;align-items:flex-end;z-index:200;}
+.sheet-backdrop.open{display:flex;}
+.sheet{background:var(--ivory);width:100%;max-height:92vh;overflow-y:auto;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));animation:slideup .28s cubic-bezier(.2,.9,.3,1);}
+@keyframes slideup{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.sheet-handle{width:40px;height:4px;background:var(--line);border-radius:4px;margin:0 auto 16px;}
+.sheet h2{font-size:1.1rem;margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.8rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+.field input[type=text],.field input[type=number],.field select,.field textarea{width:100%;padding:12px 13px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fff;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);}
+.field textarea{resize:vertical;min-height:70px;}
+.hint{font-size:0.72rem;color:var(--muted);margin-top:5px;}
+
+.upload-box{border:1.5px dashed var(--line);border-radius:var(--r-sm);padding:16px;display:flex;align-items:center;gap:12px;background:#fff;position:relative;transition:border-color .15s;}
+.upload-box.err{border-color:var(--danger);animation:shakebox .35s;}
+.upload-err-text{color:var(--danger);font-size:0.78rem;margin-top:6px;font-weight:600;display:none;}
+.upload-err-text.show{display:block;}
+@keyframes shakebox{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+.upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.upload-icon{width:42px;height:42px;border-radius:10px;background:var(--gold-tint);color:var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex:0 0 42px;}
+.upload-box strong{font-size:0.88rem;display:block;}
+.upload-box small{color:var(--muted);font-size:0.75rem;}
+.preview-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.preview-thumb{position:relative;width:66px;height:66px;border-radius:9px;overflow:hidden;background:var(--gold-tint);}
+.preview-thumb img{width:100%;height:100%;object-fit:cover;}
+.preview-thumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;}
+.progress-wrap{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:10px;display:none;}
+.progress-bar{height:100%;background:var(--gold);width:0%;transition:width .2s;}
+
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+.chip-toggle{padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);font-size:0.82rem;font-weight:600;color:var(--ink-soft);background:#fff;}
+.chip-toggle.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+.sheet-actions{display:flex;gap:10px;margin-top:18px;}
+.btn{flex:1;padding:14px;border-radius:var(--r-sm);font-weight:700;font-size:0.92rem;text-align:center;}
+.btn-primary{background:var(--ink);color:#fff;}
+.btn-primary:active{background:#3a3226;}
+.btn-ghost{background:#EFEAE0;color:var(--ink-soft);}
+.btn-primary:disabled{opacity:0.5;}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-size:0.85rem;font-weight:600;opacity:0;transition:all .3s;z-index:400;display:flex;align-items:center;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,0.3);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.err{background:var(--danger);}
+.toast i{color:var(--gold);}
+.toast.err i{color:#fff;}
+
+.amenity-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.amenity-check{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fff;font-size:0.82rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.amenity-check input{width:16px;height:16px;flex:0 0 16px;}
+.amenity-check.on{border-color:var(--gold);background:var(--gold-tint);color:var(--ink);}
+.landmark-row{display:flex;gap:8px;margin-bottom:8px;}
+.landmark-row input{flex:1;padding:11px 12px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fff;}
+.landmark-row input.lm-time{flex:0 0 90px;}
+.landmark-row .mini-btn{flex:0 0 34px;}
+.add-row-btn{width:100%;padding:11px;border:1.5px dashed var(--line);border-radius:var(--r-sm);color:var(--gold-deep);font-weight:700;font-size:0.85rem;background:#fff;}
+@media(min-width:720px){
+  main{max-width:760px;}
+  .tabbar{justify-content:center;}
+}
+@media(min-width:1000px){
+  main{max-width:980px;}
+  .sheet-backdrop{align-items:center;justify-content:center;}
+  .sheet{width:640px;max-height:88vh;border-radius:22px;}
+}
+
+/* =====================================================================
+   V2 THEME — bottom dock, overview, motion, responsive polish
+   ===================================================================== */
+:root{
+  --ink:#1B1611; --ink-soft:#4A4238;
+  --gold:#D2A24C; --gold-deep:#A87F32; --gold-tint:#F5EAD3;
+  --gold-grad:linear-gradient(135deg,#E6BF6E 0%,#C9973F 55%,#A87F32 100%);
+  --ivory:#F8F5EE; --line:#E8DFCE;
+  --shadow:0 1px 2px rgba(27,22,17,.05),0 10px 28px rgba(27,22,17,.07);
+  --dock-h:74px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+body{background:radial-gradient(1200px 500px at 50% -10%,#FFF9EA 0%,var(--ivory) 60%);background-attachment:fixed;}
+button,a{transition:transform .15s ease,background-color .2s ease,box-shadow .2s ease,opacity .2s ease;}
+button:active{transform:scale(.96);}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+/* lock screen */
+#lock{background:radial-gradient(900px 500px at 20% 10%,#4a3a22 0%,transparent 60%),radial-gradient(700px 500px at 90% 90%,#3a2c18 0%,transparent 60%),#17120d;overflow:hidden;}
+#lock::before,#lock::after{content:"";position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(70px);opacity:.35;background:var(--gold);animation:orb 12s ease-in-out infinite alternate;}
+#lock::before{left:-90px;top:-60px;}
+#lock::after{right:-100px;bottom:-80px;animation-delay:-6s;background:#8a5a1c;}
+@keyframes orb{to{transform:translate(60px,40px) scale(1.15);}}
+.lock-card{position:relative;z-index:2;animation:lockin .7s cubic-bezier(.2,.9,.3,1) both;}
+@keyframes lockin{from{opacity:0;transform:translateY(24px) scale(.96);}to{opacity:1;transform:none;}}
+.lock-mark{background:var(--gold-grad);color:#fff;box-shadow:0 8px 22px rgba(201,151,63,.45);animation:float 3.2s ease-in-out infinite;}
+@keyframes float{50%{transform:translateY(-5px);}}
+.lock-btn{background:var(--gold-grad);color:var(--ink);box-shadow:0 8px 20px rgba(201,151,63,.35);}
+.lock-card input:focus{box-shadow:0 0 0 4px rgba(210,162,76,.18);}
+
+/* header */
+header.top{padding:14px 16px 14px;background:linear-gradient(180deg,#1B1611,#231C14);border-bottom:1px solid rgba(210,162,76,.35);box-shadow:0 6px 24px rgba(27,22,17,.18);padding-top:calc(14px + env(safe-area-inset-top,0px));}
+.brand-mark{background:var(--gold-grad);position:relative;overflow:hidden;}
+.brand-mark::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:shine 4.5s ease-in-out infinite;}
+@keyframes shine{60%,100%{transform:translateX(120%);}}
+.icon-btn{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.06);}
+.icon-btn:hover{background:rgba(255,255,255,.18);}
+
+/* main */
+main{padding:18px 16px calc(var(--dock-h) + 90px + var(--safe-b));}
+.view.active{animation:fadein .35s cubic-bezier(.2,.8,.3,1);}
+.view.anim .card,.view.anim .stat,.view.anim #galGrid>div{animation:rise .5s cubic-bezier(.2,.8,.3,1) both;}
+.view.anim .card:nth-child(1),.view.anim .stat:nth-child(1){animation-delay:.02s}
+.view.anim .card:nth-child(2),.view.anim .stat:nth-child(2){animation-delay:.06s}
+.view.anim .card:nth-child(3),.view.anim .stat:nth-child(3){animation-delay:.10s}
+.view.anim .card:nth-child(4),.view.anim .stat:nth-child(4){animation-delay:.14s}
+.view.anim .card:nth-child(5),.view.anim .stat:nth-child(5){animation-delay:.18s}
+.view.anim .card:nth-child(6),.view.anim .stat:nth-child(6){animation-delay:.22s}
+.view.anim .card:nth-child(n+7),.view.anim .stat:nth-child(n+7){animation-delay:.26s}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985);}to{opacity:1;transform:none;}}
+
+.section-head h2{font-size:1.25rem;letter-spacing:-.2px;}
+.count-chip{background:var(--gold-grad);color:#fff;box-shadow:0 4px 12px rgba(201,151,63,.35);}
+.card{border-radius:16px;border:1px solid var(--line);transition:transform .2s ease,box-shadow .25s ease,border-color .2s ease;}
+.card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(27,22,17,.11);border-color:#dccaa2;}
+.thumb{box-shadow:0 2px 8px rgba(27,22,17,.12);}
+.mini-btn{transition:transform .15s ease,filter .2s ease;}
+.mini-btn:hover{filter:brightness(.95);transform:translateY(-1px);}
+.mini-btn.tog.on{background:var(--ok);}
+.btn-primary{background:var(--ink);}
+.btn-primary:hover{background:#2e261c;}
+
+/* overview */
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 20px;background:linear-gradient(135deg,#1B1611 0%,#2c2216 60%,#3b2c17 100%);color:#fff;margin-bottom:16px;box-shadow:0 18px 40px rgba(27,22,17,.25);display:flex;gap:14px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;}
+.hero-glow{position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(230,191,110,.55),transparent 65%);animation:glow 7s ease-in-out infinite alternate;}
+@keyframes glow{to{transform:translate(-40px,30px) scale(1.2);opacity:.7;}}
+.hero-txt{position:relative;z-index:1;flex:1 1 240px;}
+.hero-txt small{color:#E6BF6E;font-weight:600;font-size:.82rem;}
+.hero-txt h2{font-size:1.45rem;margin:4px 0 6px;letter-spacing:-.3px;}
+.hero-txt p{color:#CFC4B0;font-size:.85rem;max-width:34ch;line-height:1.5;}
+.hero-live{position:relative;z-index:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);padding:9px 14px;border-radius:999px;font-size:.8rem;backdrop-filter:blur(8px);}
+.hero-live b{font-family:'Sora',sans-serif;font-size:1rem;}
+.pulse{width:9px;height:9px;border-radius:50%;background:#3EDC7A;position:relative;}
+.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:#3EDC7A;animation:ping 1.8s ease-out infinite;}
+@keyframes ping{to{transform:scale(3.2);opacity:0;}}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.stat:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(27,22,17,.12);}
+.stat i{width:32px;height:32px;border-radius:9px;background:var(--gold-tint);color:var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:.85rem;margin-bottom:8px;}
+.stat b{font-family:'Sora',sans-serif;font-size:1.55rem;line-height:1.1;}
+.stat span{font-size:.72rem;color:var(--muted);font-weight:600;}
+.stat.hot i{background:var(--ink);color:var(--gold);}
+.act-row{display:flex;gap:12px;align-items:center;width:100%;text-align:left;}
+.act-ic{width:40px;height:40px;border-radius:11px;background:var(--ink);color:var(--gold);display:flex;align-items:center;justify-content:center;flex:0 0 40px;}
+.act-row .item-info h3{font-size:.92rem;}
+.act-time{font-size:.7rem;color:var(--muted);flex:0 0 auto;text-align:right;max-width:90px;}
+
+/* bottom dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:90;padding:0 0 var(--safe-b);background:rgba(27,22,17,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid rgba(210,162,76,.35);box-shadow:0 -10px 34px rgba(27,22,17,.28);}
+.dock-inner{display:flex;gap:4px;overflow-x:auto;padding:8px 10px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.dock .tab-pill{flex:0 0 auto;min-width:68px;height:auto;padding:8px 8px 7px;border-radius:14px;background:transparent;color:#BFB49F;display:flex;flex-direction:column;align-items:center;gap:4px;scroll-snap-align:center;font-size:.68rem;font-weight:600;}
+.dock .tab-pill .ic{position:relative;width:38px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:background-color .25s ease,transform .25s cubic-bezier(.2,.9,.3,1.4),color .2s;}
+.dock .tab-pill .lb{white-space:nowrap;letter-spacing:.1px;}
+.dock .tab-pill:hover{color:#fff;}
+.dock .tab-pill.active{background:transparent;color:#fff;}
+.dock .tab-pill.active .ic{background:var(--gold-grad);color:var(--ink);transform:translateY(-3px) scale(1.08);box-shadow:0 8px 18px rgba(201,151,63,.45);}
+.nb{position:absolute;top:-6px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#E5533D;color:#fff;font-style:normal;font-size:.62rem;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid #1B1611;}
+.nb.show{display:flex;animation:pop .4s cubic-bezier(.2,.9,.3,1.5);}
+@keyframes pop{from{transform:scale(0);}to{transform:scale(1);}}
+
+/* FAB + toast sit above the dock */
+.fab{bottom:calc(var(--dock-h) + 18px + var(--safe-b));right:18px;background:var(--gold-grad);z-index:95;animation:fabin .5s cubic-bezier(.2,.9,.3,1.4) both;}
+.fab:hover{transform:rotate(90deg) scale(1.05);}
+@keyframes fabin{from{transform:scale(0);}to{transform:scale(1);}}
+.toast{bottom:calc(var(--dock-h) + 20px + var(--safe-b));}
+.sheet-backdrop{z-index:200;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+.sheet{border-radius:24px 24px 0 0;}
+.upload-box:hover{border-color:var(--gold);background:#FFFCF5;}
+.gal-item{transition:transform .2s ease,box-shadow .2s ease;}
+#galGrid>div:hover{transform:scale(1.03);box-shadow:0 10px 24px rgba(27,22,17,.2);}
+
+/* tablet / desktop dashboard */
+@media(min-width:720px){
+  main{max-width:820px;}
+  .stat-grid{grid-template-columns:repeat(3,1fr);}
+  #galGrid{grid-template-columns:repeat(4,1fr)!important;}
+}
+@media(min-width:1000px){
+  :root{--dock-h:78px;}
+  main{max-width:1040px;padding-top:26px;}
+  .stat-grid{grid-template-columns:repeat(5,1fr);}
+  #catList,#propList,#consultList,#enqList,#visitList,#supList,#bannerList,#sbMobileList,#sbDeskList,#activityList{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  #catList .card,#propList .card,#consultList .card,#enqList .card,#visitList .card,#supList .card,#bannerList .card,#sbMobileList .card,#sbDeskList .card,#activityList .card{margin:0;}
+  #catList .empty,#propList .empty,#consultList .empty,#enqList .empty,#visitList .empty,#supList .empty,#bannerList .empty,#sbMobileList .empty,#sbDeskList .empty,#activityList .empty{grid-column:1/-1;}
+  #galGrid{grid-template-columns:repeat(6,1fr)!important;}
+  .dock{left:50%;right:auto;bottom:16px;transform:translateX(-50%);width:min(940px,calc(100% - 40px));border:1px solid rgba(210,162,76,.4);border-radius:22px;padding-bottom:0;}
+  .dock-inner{justify-content:center;padding:8px 12px;}
+  .dock .tab-pill{min-width:76px;}
+  .fab{bottom:110px;right:34px;}
+  .toast{bottom:112px;}
+  .hero{padding:30px 32px;}
+  .hero-txt h2{font-size:1.9rem;}
+}
+@media(max-width:380px){
+  .stat-grid{gap:8px;}
+  .stat b{font-size:1.3rem;}
+  .dock .tab-pill{min-width:62px;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+}
+
+/* ===== V3 : 3D, charts, leads ===== */
+.stat,.card{transform:perspective(800px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0px));transform-style:preserve-3d;will-change:transform;}
+.stat:hover,.card:hover{--ty:-3px;}
+.stat i{transform:translateZ(22px);}
+.stat b{transform:translateZ(14px);display:block;}
+.hero{perspective:900px;}
+.scene{position:absolute;right:26px;top:20px;width:52px;height:52px;perspective:500px;z-index:1;}
+.cube3d{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:spin3 14s linear infinite;}
+.cube3d i{position:absolute;inset:0;border:1.5px solid rgba(230,191,110,.85);background:rgba(210,162,76,.14);box-shadow:inset 0 0 14px rgba(230,191,110,.35);}
+.cube3d i:nth-child(1){transform:translateZ(26px)}.cube3d i:nth-child(2){transform:rotateY(90deg) translateZ(26px)}.cube3d i:nth-child(3){transform:rotateY(180deg) translateZ(26px)}.cube3d i:nth-child(4){transform:rotateY(-90deg) translateZ(26px)}.cube3d i:nth-child(5){transform:rotateX(90deg) translateZ(26px)}.cube3d i:nth-child(6){transform:rotateX(-90deg) translateZ(26px)}
+@keyframes spin3{to{transform:rotateX(360deg) rotateY(360deg)}}
+.chart-card{background:linear-gradient(160deg,#17120d,#241b12);border:1px solid rgba(210,162,76,.3);border-radius:20px;padding:16px 14px 14px;color:#fff;box-shadow:0 18px 40px rgba(27,22,17,.25);margin-bottom:6px;}
+.chart-top{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
+.chart-top b{font-family:'Sora',sans-serif;font-size:1.7rem;color:#E6BF6E;}
+.chart-top span{color:#BFB49F;font-size:.78rem;flex:1;}
+.chart-top em{font-style:normal;font-size:.68rem;font-weight:800;color:#3EDC7A;display:flex;align-items:center;gap:6px;}
+.chart-top em s{width:7px;height:7px;border-radius:50%;background:#3EDC7A;animation:ping 1.8s ease-out infinite;}
+.cwrap{position:relative;}
+#candle{width:100%;height:210px;display:block;touch-action:pan-y;}
+#lineC{width:100%;height:86px;display:block;margin-top:8px;}
+.tip{position:absolute;pointer-events:none;background:rgba(0,0,0,.85);border:1px solid rgba(230,191,110,.5);border-radius:10px;padding:7px 10px;font-size:.72rem;line-height:1.5;display:none;z-index:3;white-space:nowrap;}
+.csub{font-size:.68rem;color:#8f8573;margin-top:6px;line-height:1.4;}
+.lead-tools{display:flex;gap:8px;margin-bottom:12px;}
+.lead-tools .search{flex:1;position:relative;}
+.lead-tools .search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.8rem;}
+.lead-tools input{width:100%;padding:11px 12px 11px 34px;border:1.5px solid var(--line);border-radius:12px;background:#fff;}
+.lead-tools input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(210,162,76,.15);}
+.tool{width:42px;border-radius:12px;background:#fff;border:1.5px solid var(--line);color:var(--gold-deep);}
+.tool.on{background:var(--ink);color:var(--gold);border-color:var(--ink);}
+.card.lead{cursor:pointer;position:relative;}
+.card.lead.unread{border-left:4px solid var(--gold);}
+.card.lead.sel{outline:2px solid var(--gold);background:#FFFBF1;}
+.card.lead .ck{display:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);margin-right:10px;flex:0 0 22px;align-items:center;justify-content:center;font-size:.65rem;color:#fff;}
+.selmode .card.lead .ck{display:flex;}
+.card.lead.sel .ck{background:var(--gold);border-color:var(--gold);}
+.udot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:6px;}
+.bulkbar{position:fixed;left:12px;right:12px;bottom:calc(var(--dock-h) + 14px + var(--safe-b));z-index:120;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;display:none;align-items:center;gap:8px;box-shadow:0 14px 34px rgba(0,0,0,.35);}
+.bulkbar.show{display:flex;animation:rise .3s both;}
+.bulkbar span{flex:1;font-weight:700;font-size:.85rem;}
+.bulkbar button{padding:9px 12px;border-radius:10px;font-weight:700;font-size:.78rem;background:rgba(255,255,255,.12);color:#fff;}
+.bulkbar .dz{background:var(--danger);}
+@media(min-width:1000px){.bulkbar{left:50%;right:auto;transform:translateX(-50%);width:520px;bottom:110px;}}
+.dlg{position:fixed;inset:0;z-index:500;background:rgba(20,17,13,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadein .2s;}
+.dlg div{background:#fff;border-radius:20px;padding:22px;max-width:340px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.4);animation:lockin .35s cubic-bezier(.2,.9,.3,1.3);}
+.dlg h3{font-size:1.05rem;margin-bottom:6px;}.dlg p{color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:16px;}
+.dlg .row{display:flex;gap:10px;padding:0;box-shadow:none;background:none;animation:none;}
+.gal-edit{position:absolute;top:5px;left:5px;width:26px;height:26px;border-radius:50%;background:rgba(20,17,13,.65);color:#fff;font-size:.7rem;display:flex;align-items:center;justify-content:center;}
+.dl{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.88rem;}
+.dl small{color:var(--muted);font-weight:600;}.dl span{text-align:right;word-break:break-word;}
+.rules{background:#17120d;color:#E6BF6E;border-radius:12px;padding:12px;font-size:.72rem;white-space:pre-wrap;word-break:break-all;margin:10px 0;}
+.chart-top em s{animation:none;position:relative;display:block;text-decoration:none;}
+.chart-top em s::after{content:"";position:absolute;inset:0;border-radius:50%;background:#3EDC7A;animation:ping 1.8s ease-out infinite;}
+.demo-btn{font-size:.68rem;font-weight:700;color:#E6BF6E;border:1px solid rgba(230,191,110,.5);border-radius:999px;padding:4px 10px;background:rgba(230,191,110,.08);}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:.7rem;color:#BFB49F;}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+#candle{height:230px;}
+
+/* ===== V4 : command-center home ===== */
+:root{--neon:#3EDC7A;--gold2:#E6BF6E;--blue2:#4DA3FF;}
+.hud{position:relative;border-radius:20px;background:linear-gradient(160deg,#0d0a07,#1a130c 70%,#120d08);border:1px solid rgba(230,191,110,.28);color:#fff;overflow:hidden;box-shadow:0 20px 44px rgba(0,0,0,.32),inset 0 0 40px rgba(230,191,110,.04);margin-bottom:14px;}
+.hud::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);}
+.hud::after{content:"";position:absolute;inset:6px;pointer-events:none;z-index:2;border-radius:14px;
+ background:linear-gradient(var(--neon),var(--neon)) 0 0/16px 2px no-repeat,linear-gradient(var(--neon),var(--neon)) 0 0/2px 16px no-repeat,linear-gradient(var(--neon),var(--neon)) 100% 0/16px 2px no-repeat,linear-gradient(var(--neon),var(--neon)) 100% 0/2px 16px no-repeat,linear-gradient(var(--neon),var(--neon)) 0 100%/16px 2px no-repeat,linear-gradient(var(--neon),var(--neon)) 0 100%/2px 16px no-repeat,linear-gradient(var(--neon),var(--neon)) 100% 100%/16px 2px no-repeat,linear-gradient(var(--neon),var(--neon)) 100% 100%/2px 16px no-repeat;opacity:.7;}
+.cmd{padding:0;}
+#rain{position:absolute;inset:0;width:100%;height:100%;opacity:.4;z-index:0;}
+.cmd-bar{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(0,0,0,.45);border-bottom:1px solid rgba(62,220,122,.25);font:600 .72rem 'JetBrains Mono',ui-monospace,Menlo,monospace;color:#9fe8b8;}
+.cmd-bar b{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dots{display:flex;gap:5px;}.dots i{width:9px;height:9px;border-radius:50%;background:#E5533D;}.dots i:nth-child(2){background:#E6BF6E;}.dots i:nth-child(3){background:var(--neon);}
+.cmd-body{position:relative;z-index:1;padding:14px 16px 16px;}
+.cmd-body small{color:var(--gold2);font-weight:700;letter-spacing:.4px;font-size:.78rem;}
+#term{margin:6px 0 12px;font:500 .78rem/1.65 'JetBrains Mono',ui-monospace,Menlo,monospace;color:var(--neon);white-space:pre-wrap;text-shadow:0 0 8px rgba(62,220,122,.55);min-height:5.4em;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{display:inline-flex;align-items:center;gap:7px;font:700 .66rem 'Inter',sans-serif;letter-spacing:.6px;padding:6px 11px;border-radius:999px;border:1px solid rgba(230,191,110,.4);background:rgba(230,191,110,.08);color:var(--gold2);}
+.chip.ok{border-color:rgba(62,220,122,.5);background:rgba(62,220,122,.1);color:var(--neon);}
+.chip s{width:8px;height:8px;border-radius:50%;background:var(--neon);position:relative;display:block;text-decoration:none;}
+.chip s::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--neon);animation:ping 1.8s ease-out infinite;}
+.chip b{color:#fff;font-size:.8rem;}
+.cur{animation:blink 1s steps(1) infinite;color:var(--neon);}@keyframes blink{50%{opacity:0}}
+.chart-card{padding:16px 14px 14px;}
+.chart-card>*{position:relative;z-index:1;}
+.chart-top .demo-btn{margin-right:4px;}
+.headline{display:flex;align-items:center;gap:16px;padding:18px 16px;margin:0 0 14px;border-radius:20px;background:linear-gradient(135deg,#0d0a07,#1f1710);border:1px solid rgba(230,191,110,.35);box-shadow:0 16px 36px rgba(0,0,0,.28);position:relative;overflow:hidden;}
+.headline::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(230,191,110,.16) 50%,transparent 65%);transform:translateX(-120%);animation:shine 5s ease-in-out infinite;}
+.hl-ic{flex:0 0 auto;width:64px;height:64px;border-radius:18px;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;font-size:1.9rem;color:#17120d;box-shadow:0 0 30px rgba(230,191,110,.45);animation:float 3.2s ease-in-out infinite;}
+.headline h2{font-family:'Sora',sans-serif;font-size:1.35rem;line-height:1.15;color:#fff;letter-spacing:-.3px;}
+.headline h2 span{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.headline p{color:var(--gold2);font-weight:600;font-size:.86rem;margin-top:6px;}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.kpi{position:relative;text-align:center;padding:16px 10px 14px;border-radius:18px;background:linear-gradient(160deg,#100c08,#1c150e);border:1px solid rgba(230,191,110,.35);color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:2px;overflow:hidden;}
+.kpi::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--gold-grad);}
+.kpi i{color:var(--gold2);font-size:1.25rem;margin-bottom:4px;filter:drop-shadow(0 0 8px rgba(230,191,110,.6));}
+.kpi b{font-family:'Sora',sans-serif;font-size:1.9rem;line-height:1.1;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.kpi strong{font-size:.86rem;}.kpi span{font-size:.68rem;color:#BFB49F;}
+.cta{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:18px;border-radius:16px;border:1.5px solid rgba(230,191,110,.6);background:linear-gradient(90deg,rgba(230,191,110,.14),rgba(230,191,110,.04));color:#fff;box-shadow:0 0 26px rgba(230,191,110,.15);}
+.cta i{font-size:1.6rem;color:var(--gold2);}
+.cta b{display:block;color:var(--gold2);font-size:.82rem;letter-spacing:.3px;}.cta span{font-size:.8rem;color:#e9dfcb;}
+#view-overview .stat{background:linear-gradient(160deg,#100c08,#1c150e);border:1px solid rgba(230,191,110,.22);color:#fff;}
+#view-overview .stat span{color:#BFB49F;}
+#view-overview .stat i{background:rgba(230,191,110,.12);color:var(--gold2);}
+#view-overview .stat.hot{border-color:rgba(62,220,122,.35);}#view-overview .stat.hot i{background:rgba(62,220,122,.12);color:var(--neon);}
+#view-overview .subhead{color:var(--gold-deep);font-family:'JetBrains Mono',ui-monospace,monospace;letter-spacing:1px;}
+#view-overview .subhead::before{content:"// ";color:var(--neon);}
+#activityList .card{background:linear-gradient(160deg,#0d0a07,#17110b);border:1px solid rgba(62,220,122,.22);color:#e8ffe9;}
+#activityList .card h3{color:#fff;}#activityList .card p,#activityList .act-time{color:#8fbf9f;}
+#activityList .act-ic{background:rgba(62,220,122,.12);color:var(--neon);}
+#activityList .empty,#activityList .empty *{color:#8fbf9f;}
+@media(min-width:720px){.kpis{grid-template-columns:repeat(4,1fr);}.headline h2{font-size:1.8rem;}#candle{height:300px;}#lineC{height:110px;}}
+@media(min-width:1000px){.cmd-body{padding:20px 24px 22px;}#term{font-size:.88rem;}}
+
+/* ===== VIDEOS TAB ===== */
+.vid-add-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px;}
+.vid-add{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:18px 10px;border-radius:18px;border:1.5px dashed var(--gold);background:var(--gold-tint);color:var(--ink);text-align:center;transition:transform .15s ease,box-shadow .2s;}
+.vid-add:active{transform:scale(.97);}
+.vid-add:hover{box-shadow:0 8px 22px rgba(198,154,70,.28);}
+.vid-add i{width:46px;height:46px;border-radius:14px;background:var(--gold);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:4px;}
+.vid-add b{font-size:.9rem;}
+.vid-add small{font-size:.72rem;color:var(--muted);}
+.vid-th{position:relative;flex:0 0 auto;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#2b2318,#4a3c22);display:flex;align-items:center;justify-content:center;color:var(--gold2,#E6BF6E);box-shadow:0 2px 8px rgba(27,22,17,.15);}
+.vid-th.s{width:52px;height:92px;}
+.vid-th.l{width:112px;height:63px;}
+.vid-th img,.vid-th video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.vid-th span{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:5px;}
+.vid-th span:empty{display:none;}
+.vid-mode{display:flex;gap:8px;margin-bottom:10px;}
+.vid-mode button{flex:1;padding:10px 8px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:.8rem;font-weight:600;color:var(--ink-soft);}
+.vid-mode button.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+.vid-type-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--gold-tint);color:var(--gold-deep);font-size:.74rem;font-weight:700;margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOCK SCREEN ===================== -->
+<div id="lock">
+  <div class="lock-card">
+    <div class="lock-mark"><i class="fas fa-mountain-sun"></i></div>
+    <h1>Viharamba Control Room</h1>
+    <p>Enter the admin password to continue</p>
+    <input type="password" id="lockInput" placeholder="••••••••" autocomplete="off" inputmode="text">
+    <button class="lock-btn" id="lockBtn" onclick="tryUnlock()">Unlock</button>
+    <div class="lock-err" id="lockErr"></div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <div class="brand-mark">V</div>
+        <div>
+          <h1>Viharamba</h1>
+          <span>Control Room · <span id="whoAmI" style="opacity:.8;"></span></span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="icon-btn" style="width:auto;padding:0 12px;gap:7px;" title="People on the site right now">
+          <span style="width:8px;height:8px;border-radius:50%;background:#3EDC7A;display:inline-block;box-shadow:0 0 6px #3EDC7A;"></span>
+          <span id="liveCount">0</span>
+        </div>
+        <a class="icon-btn" href="index.html" target="_blank" title="View live site"><i class="fas fa-arrow-up-right-from-square"></i></a>
+        <button class="icon-btn" onclick="lockOut()" title="Lock"><i class="fas fa-lock"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section class="view active" id="view-overview">
+      <div class="hud cmd">
+        <canvas id="rain"></canvas>
+        <div class="cmd-bar"><span class="dots"><i></i><i></i><i></i></span><b>root@viharamba:~/control-room</b><span id="sysClock">--:--:--</span></div>
+        <div class="cmd-body">
+          <small id="greet">Welcome back</small>
+          <pre id="term"></pre>
+          <div class="chips">
+            <span class="chip ok"><s></s>SYSTEM ONLINE</span>
+            <span class="chip"><i class="fas fa-lock"></i>ENCRYPTED SESSION</span>
+            <span class="chip"><i class="fas fa-satellite-dish"></i><b id="ovLive">0</b>&nbsp;LIVE VISITORS</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud chart-card">
+        <div class="chart-top"><b id="chTotal">0</b><span>leads in 14 days</span><button id="demoBtn" class="demo-btn" onclick="toggleDemo()">Preview</button><em><s></s>LIVE</em></div>
+        <div class="cwrap"><canvas id="candle"></canvas><div class="tip" id="ctip"></div></div>
+        <canvas id="lineC"></canvas>
+        <div class="legend"><span><i style="background:#4DA3FF"></i>Consultations</span><span><i style="background:#E6BF6E"></i>Enquiries</span><span><i style="background:#3EDC7A"></i>Visits</span><span><i style="background:#A78BFA"></i>Support</span></div>
+        <div class="csub">Each candle is one day of your running lead total. Green means new leads came in, gold means none. The blue line follows the total. Only leads with a recorded date are counted.</div>
+      </div>
+
+      <div class="headline"><div class="hl-ic"><i class="fas fa-bullseye"></i></div><div><h2>REAL LEADS.<br><span>REAL GROWTH.</span></h2><p>Your Business. Our Priority.</p></div></div>
+
+      <div class="kpis">
+        <div class="kpi"><i class="fas fa-bullseye"></i><b id="kTotal">0</b><strong>Total Leads</strong><span>All enquiries in one place</span></div>
+        <div class="kpi"><i class="fas fa-arrow-trend-up"></i><b id="kToday">0</b><strong>Today</strong><span>New since midnight</span></div>
+        <div class="kpi"><i class="fas fa-bolt"></i><b id="kUnread">0</b><strong>Unread</strong><span>Never miss a lead</span></div>
+        <div class="kpi"><i class="fas fa-satellite-dish"></i><b id="kLive">0</b><strong>Live Now</strong><span>Visitors on the site</span></div>
+      </div>
+
+      <div class="cta"><i class="fas fa-arrow-trend-up"></i><div><b>NEW LEADS TODAY = MORE SALES TOMORROW</b><span>Stay consistent. Stay ahead. Let's grow together!</span></div></div>
+
+      <div class="subhead">Modules</div>
+      <div class="stat-grid" id="statGrid">
+        <button class="stat" onclick="goTab('property')"><i class="fas fa-building"></i><b data-stat="allProperties">0</b><span>Projects</span></button>
+        <button class="stat" onclick="goTab('category')"><i class="fas fa-shapes"></i><b data-stat="allCategories">0</b><span>Categories</span></button>
+        <button class="stat" onclick="goTab('banner')"><i class="fas fa-panorama"></i><b data-stat="allBanners">0</b><span>Home banners</span></button>
+        <button class="stat" onclick="goTab('banner2')"><i class="fas fa-images"></i><b data-stat="__sb">0</b><span>2nd banners</span></button>
+        <button class="stat" onclick="goTab('gallery')"><i class="fas fa-photo-film"></i><b data-stat="allGallery">0</b><span>Gallery images</span></button>
+        <button class="stat hot" onclick="goTab('consultations')"><i class="fas fa-comments"></i><b data-stat="allConsultations">0</b><span>Consultations</span></button>
+        <button class="stat hot" onclick="goTab('enquiries')"><i class="fas fa-file-signature"></i><b data-stat="allEnquiries">0</b><span>Enquiries</span></button>
+        <button class="stat hot" onclick="goTab('visits')"><i class="fas fa-calendar-check"></i><b data-stat="allVisits">0</b><span>Visit requests</span></button>
+        <button class="stat hot" onclick="goTab('support')"><i class="fas fa-headset"></i><b data-stat="allSupport">0</b><span>Support</span></button>
+        <button class="stat" onclick="goTab('videos')"><i class="fas fa-circle-play"></i><b data-stat="allVideos">0</b><span>Videos</span></button>
+      </div>
+      <div class="subhead">Live feed</div>
+      <div id="activityList"></div>
+    </section>
+
+    <!-- CATEGORY -->
+    <section class="view" id="view-category">
+      <div class="section-head"><h2>Categories</h2><span class="count-chip" id="catCount">0</span></div>
+      <div id="catList"></div>
+    </section>
+
+    <!-- PROPERTY -->
+    <section class="view" id="view-property">
+      <div class="section-head"><h2>Projects</h2><span class="count-chip" id="propCount">0</span></div>
+      <div id="propList"></div>
+    </section>
+
+    <!-- BANNER -->
+    <section class="view" id="view-banner">
+      <div class="section-head"><h2>Home Banner</h2><span class="count-chip" id="bannerCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Top rotating banner on the homepage. Add more than one for a slider.</p>
+      <div id="bannerList"></div>
+    </section>
+
+    <!-- 2ND BANNER -->
+    <section class="view" id="view-banner2">
+      <div class="subhead">Mobile banner · 16:9</div>
+      <div id="sbMobileList"></div>
+      <button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="openSheet('sbMobile')"><i class="fas fa-plus"></i> Add mobile banner</button>
+
+      <div class="subhead">Dashboard banner · 1536×515</div>
+      <div id="sbDeskList"></div>
+      <button class="btn btn-ghost" style="width:100%;" onclick="openSheet('sbDesk')"><i class="fas fa-plus"></i> Add dashboard banner</button>
+    </section>
+
+    <!-- GALLERY -->
+    <section class="view" id="view-gallery">
+      <div class="section-head"><h2>Rotating Gallery</h2><span class="count-chip" id="galCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Square-ish images that auto-rotate on the site. Add as many as you like.</p>
+      <div id="galGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+    </section>
+
+    <!-- CONSULTATIONS (homepage "Request Consultation" form) -->
+    <section class="view" id="view-consultations">
+      <div class="section-head"><h2>Consultations</h2><span class="count-chip" id="consultCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Submitted from the "Request Consultation" form on the homepage.</p>
+      <div id="consultList"></div>
+    </section>
+
+    <!-- ENQUIRIES (Enquire Now on a property) -->
+    <section class="view" id="view-enquiries">
+      <div class="section-head"><h2>Enquiries</h2><span class="count-chip" id="enqCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Submitted from "Enquire Now" on a property page.</p>
+      <div id="enqList"></div>
+    </section>
+
+    <!-- VISITS (Schedule Visit) -->
+    <section class="view" id="view-visits">
+      <div class="section-head"><h2>Visit Requests</h2><span class="count-chip" id="visitCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Submitted from "Schedule Visit" on a property page.</p>
+      <div id="visitList"></div>
+    </section>
+
+    <!-- SUPPORT -->
+    <section class="view" id="view-support">
+      <div class="section-head"><h2>Help &amp; Support</h2><span class="count-chip" id="supCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Submitted from Profile → Help &amp; Support.</p>
+      <div id="supList"></div>
+    </section>
+
+    <!-- VIDEOS (Short 9:16 + Long 16:9 → shown live on the user panel below Category and on the Video page) -->
+    <section class="view" id="view-videos">
+      <div class="section-head"><h2>Videos</h2><span class="count-chip" id="vidCount">0</span></div>
+      <p class="hint" style="margin-bottom:14px;">Upload a video and it appears on the user panel instantly — on the home page below Categories and on the Video page. Shorts are vertical (9:16), long videos are horizontal (16:9).</p>
+      <div class="vid-add-row">
+        <button class="vid-add" onclick="openSheet('video', null, {vtype:'short'})"><i class="fas fa-mobile-screen-button"></i><b>Add Short</b><small>9:16 · vertical</small></button>
+        <button class="vid-add" onclick="openSheet('video', null, {vtype:'long'})"><i class="fas fa-film"></i><b>Add Long Video</b><small>16:9 · horizontal</small></button>
+      </div>
+
+      <div class="subhead">Shorts · 9:16 <span id="vidShortCount" class="count-chip" style="margin-left:6px;">0</span></div>
+      <div id="vidShortList"></div>
+
+      <div class="subhead">Long videos · 16:9 <span id="vidLongCount" class="count-chip" style="margin-left:6px;">0</span></div>
+      <div id="vidLongList"></div>
+    </section>
+  </main>
+
+  <nav class="dock" id="bottomNav" aria-label="Admin sections"><div class="dock-inner">
+  <button class="tab-pill active" data-tab="overview" onclick="goTab('overview')"><span class="ic"><i class="fas fa-gauge-high"></i></span><span class="lb">Home</span></button>
+  <button class="tab-pill" data-tab="category" onclick="goTab('category')"><span class="ic"><i class="fas fa-shapes"></i></span><span class="lb">Category</span></button>
+  <button class="tab-pill" data-tab="property" onclick="goTab('property')"><span class="ic"><i class="fas fa-building"></i></span><span class="lb">Project</span></button>
+  <button class="tab-pill" data-tab="banner" onclick="goTab('banner')"><span class="ic"><i class="fas fa-panorama"></i></span><span class="lb">Banner</span></button>
+  <button class="tab-pill" data-tab="banner2" onclick="goTab('banner2')"><span class="ic"><i class="fas fa-images"></i></span><span class="lb">2nd Banner</span></button>
+  <button class="tab-pill" data-tab="gallery" onclick="goTab('gallery')"><span class="ic"><i class="fas fa-photo-film"></i></span><span class="lb">Gallery</span></button>
+  <button class="tab-pill" data-tab="consultations" onclick="goTab('consultations')"><span class="ic"><i class="fas fa-comments"></i><em class="nb" id="nb-consultations"></em></span><span class="lb">Consult</span></button>
+  <button class="tab-pill" data-tab="enquiries" onclick="goTab('enquiries')"><span class="ic"><i class="fas fa-file-signature"></i><em class="nb" id="nb-enquiries"></em></span><span class="lb">Enquiries</span></button>
+  <button class="tab-pill" data-tab="visits" onclick="goTab('visits')"><span class="ic"><i class="fas fa-calendar-check"></i><em class="nb" id="nb-visits"></em></span><span class="lb">Visits</span></button>
+  <button class="tab-pill" data-tab="support" onclick="goTab('support')"><span class="ic"><i class="fas fa-headset"></i><em class="nb" id="nb-support"></em></span><span class="lb">Support</span></button>
+  <button class="tab-pill" data-tab="videos" onclick="goTab('videos')"><span class="ic"><i class="fas fa-circle-play"></i></span><span class="lb">Videos</span></button>
+</div></nav>
+
+  <button class="fab" id="fabBtn" onclick="fabClicked()"><i class="fas fa-plus"></i></button>
+</div>
+
+<!-- ===================== SHEET / MODAL ===================== -->
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet" id="sheetBody"></div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script>
+/* ============ CONFIG ============ */
+// The admin password is checked against a real Firebase Authentication
+// account (Email/Password) — this is what actually protects your data,
+// not just this screen. See the setup notes sent with this file for the
+// one-time steps to create this account in the Firebase console.
+const ADMIN_EMAIL = "admin@viharamba.com";
+const CLOUD_NAME = "fh1hpct6";
+const UPLOAD_PRESET = "Realestate";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDtzwGSoH0usQVTMPuwHSckopfopdXDvxw",
+  authDomain: "viharamba-3dc5c.firebaseapp.com",
+  databaseURL: "https://viharamba-3dc5c-default-rtdb.firebaseio.com",
+  projectId: "viharamba-3dc5c",
+  storageBucket: "viharamba-3dc5c.firebasestorage.app",
+  messagingSenderId: "225529967380",
+  appId: "1:225529967380:web:2bea52ba4295f94dc0c801"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+/* ---- listener manager: public data loads while the password is typed; lead data attaches right after sign-in ---- */
+const _ref = db.ref.bind(db), LST = [];
+const EMPTY_SNAP = {exists:()=>false, forEach(){}, numChildren:()=>0};
+const isAdmin = ()=>!!(auth.currentUser && auth.currentUser.email===ADMIN_EMAIL);
+function attachL(e){
+  e.live = true;
+  e.h = e.on(e.ev, e.cb, err=>{ e.live=false; if(isAdmin() && e.eb) e.eb(err); });
+}
+db.ref = function(path){
+  const r = _ref(path);
+  if(!path) return r;
+  const on = r.on.bind(r);
+  r.on = function(ev, cb, eb){
+    const e = {ev, cb, eb, on, r, live:false, h:null, sens:/^(consultations|enquiries|visits|supportRequests|liveVisitors)$/.test(path)};
+    LST.push(e);
+    if(!e.sens || isAdmin()) attachL(e);
+    return cb;
+  };
+  return r;
+};
+function startData(){ LST.forEach(e=>{ if(e.live) return; if(e.h) try{e.r.off(e.ev,e.h);}catch(x){} attachL(e); }); }
+function stopData(){ LST.forEach(e=>{ if(!e.sens) return; try{ e.r.off(e.ev,e.h); }catch(x){} e.live=false; e.cb(EMPTY_SNAP); }); }
+
+/* ============ LOCK (real Firebase sign-in, not just a UI gate) ============ */
+async function tryUnlock(){
+  const val = document.getElementById('lockInput').value.trim();
+  const btn = document.getElementById('lockBtn');
+  document.getElementById('lockErr').innerText = '';
+  if(!val) return;
+  btn.disabled = true; btn.innerText = 'Checking...';
+  try{
+    await auth.signInWithEmailAndPassword(ADMIN_EMAIL, val);
+    // onAuthStateChanged below opens the app once sign-in succeeds
+  }catch(err){
+    console.error('Admin sign-in failed:', err);
+    document.getElementById('lockErr').innerText = 'Wrong password, try again';
+    document.getElementById('lockInput').value='';
+    btn.disabled = false; btn.innerText = 'Unlock';
+  }
+}
+document.getElementById('lockInput').addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+function lockOut(){ auth.signOut(); }
+let signingOutStaleSession = false;
+auth.onAuthStateChanged(user=>{
+  const btn = document.getElementById('lockBtn');
+  if(user && user.email === ADMIN_EMAIL){
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='block';
+    const who = document.getElementById('whoAmI');
+    if(who) who.innerText = user.email;
+  } else if(user){
+    // A leftover anonymous (or otherwise non-admin) session from this same
+    // Firebase project — e.g. from browsing the public site earlier in this
+    // browser — was auto-restored here and would silently fail every read.
+    // Sign it out immediately so the real password screen shows instead.
+    if(!signingOutStaleSession){
+      signingOutStaleSession = true;
+      auth.signOut().finally(()=>{ signingOutStaleSession = false; });
+    }
+    document.getElementById('lock').style.display='flex';
+    document.getElementById('app').style.display='none';
+  } else {
+    document.getElementById('lock').style.display='flex';
+    document.getElementById('app').style.display='none';
+    if(btn){ btn.disabled=false; btn.innerText='Unlock'; }
+  }
+});
+
+/* ============ HELPERS ============ */
+function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+const AMENITY_LIST = [
+  {key:'pool', label:'Swimming Pool', icon:'fa-water-ladder'},
+  {key:'clubhouse', label:'Club House', icon:'fa-building'},
+  {key:'gym', label:'Gym', icon:'fa-dumbbell'},
+  {key:'kids', label:'Kids Play Area', icon:'fa-person-walking-arrow-right'},
+  {key:'jogging', label:'Jogging Track', icon:'fa-person-running'},
+  {key:'garden', label:'Landscaped Garden', icon:'fa-leaf'},
+  {key:'games', label:'Indoor Games', icon:'fa-gamepad'},
+  {key:'power', label:'Power Backup', icon:'fa-bolt'},
+  {key:'water', label:'Rain Water Harvesting', icon:'fa-droplet'},
+  {key:'cctv', label:'CCTV Surveillance', icon:'fa-video'},
+  {key:'privatepool', label:'Private Pool', icon:'fa-water-ladder'},
+  {key:'smarthome', label:'Smart Home', icon:'fa-house-signal'},
+  {key:'gated', label:'Gated Community', icon:'fa-shield-halved'},
+  {key:'security', label:'24/7 Security', icon:'fa-shield'}
+];
+function landmarkRowHTML(name,time){
+  return `<div class="landmark-row"><input type="text" class="lm-name" placeholder="e.g. Phoenix Mall" value="${esc(name)}"><input type="text" class="lm-time" placeholder="5 min" value="${esc(time)}"><button type="button" class="mini-btn del" onclick="this.parentElement.remove()"><i class="fas fa-xmark"></i></button></div>`;
+}
+window.addLandmarkRow = () => {
+  document.getElementById('landmarkRows').insertAdjacentHTML('beforeend', landmarkRowHTML('',''));
+};
+function describeErr(err){
+  if(typeof err === 'string') return err;
+  if(err && err.message) return err.message;
+  if(err && err.code) return 'Error: ' + err.code;
+  return 'Something went wrong — check your internet and try again';
+}
+function toast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.querySelector('i').className = isErr ? 'fas fa-triangle-exclamation' : 'fas fa-check-circle';
+  document.getElementById('toastMsg').innerText = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(()=>t.classList.remove('show'), isErr ? 6000 : 2600);
+}
+function fmtPrice(v){
+  if(v===undefined||v===null||v==='') return '';
+  const n = Number(v);
+  if(isNaN(n)) return v;
+  if(n>=10000000) return '₹' + (n/10000000).toFixed(2).replace(/\.00$/,'') + ' Cr';
+  if(n>=100000) return '₹' + (n/100000).toFixed(2).replace(/\.00$/,'') + ' L';
+  return '₹' + n.toLocaleString('en-IN');
+}
+
+function uploadToCloudinary(file, onProgress){
+  return new Promise((resolve, reject)=>{
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`);
+    xhr.upload.onprogress = e=>{ if(e.lengthComputable && onProgress) onProgress(Math.round(e.loaded/e.total*100)); };
+    xhr.onload = ()=>{
+      try{
+        const res = JSON.parse(xhr.responseText);
+        if(res.secure_url) resolve(res);
+        else reject(res.error ? res.error.message : 'Upload failed');
+      }catch(err){ reject('Upload failed'); }
+    };
+    xhr.onerror = ()=>reject('Network error during upload');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', UPLOAD_PRESET);
+    xhr.send(fd);
+  });
+}
+
+/* ============ TABS ============ */
+let currentTab = 'category';
+function goTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab-pill').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  const readOnlyTabs = ['overview','banner2','consultations','enquiries','visits','support','videos'];
+  document.getElementById('fabBtn').style.display = readOnlyTabs.includes(tab) ? 'none' : 'flex';
+}
+function fabClicked(){
+  if(currentTab==='category') openSheet('category');
+  else if(currentTab==='property') openSheet('property');
+  else if(currentTab==='banner') openSheet('banner');
+  else if(currentTab==='gallery') openSheet('gallery');
+}
+
+/* ============ SHEET SYSTEM ============ */
+let pendingFiles = {}; // key -> [File,...] or File
+let editContext = null; // {type, id, data}
+
+function closeSheet(){
+  document.getElementById('sheetBackdrop').classList.remove('open');
+  document.getElementById('sheetBody').innerHTML = '';
+  pendingFiles = {};
+  editContext = null;
+}
+
+function openSheet(type, editId, editData){
+  editContext = editId ? {type, id: editId, data: editData} : {type, id:null, data:null};
+  pendingFiles = {};
+  const body = document.getElementById('sheetBody');
+  body.innerHTML = buildSheetHTML(type, editData);
+  document.getElementById('sheetBackdrop').classList.add('open');
+}
+
+function buildSheetHTML(type, d){
+  d = d || {};
+  if(type==='category'){
+    return `
+      <div class="sheet-handle"></div>
+      <h2>${d.__editing?'Edit category':'Add category'}</h2>
+      <div class="field">
+        <label>Category image · 1:1 square</label>
+        <div class="upload-box" id="ub-catimg">
+          <input type="file" accept="image/*" onchange="handleSingleFile(this,'catimg')">
+          <div class="upload-icon"><i class="fas fa-image"></i></div>
+          <div><strong>Tap to choose photo</strong><br><small>Square image works best</small></div>
+        </div>
+        <div class="upload-err-text" id="ue-catimg">Please choose a category image before saving</div>
+        <div class="preview-strip" id="pv-catimg">${d.imageUrl?`<div class="preview-thumb"><img src="${esc(d.imageUrl)}"></div>`:''}</div>
+        <div class="progress-wrap" id="pg-catimg"><div class="progress-bar" id="pb-catimg"></div></div>
+      </div>
+      <div class="field">
+        <label>Category name</label>
+        <input type="text" id="f-catname" placeholder="e.g. Warehouse" value="${esc(d.name)}">
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" onclick="closeSheet()">Cancel</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveCategory('${d.id||''}')">${d.__editing?'Save changes':'Add category'}</button>
+      </div>`;
+  }
+  if(type==='property'){
+    const tags = d.homeTags||{};
+    return `
+      <div class="sheet-handle"></div>
+      <h2>${d.__editing?'Edit project':'Add project'}</h2>
+      <div class="field"><label>Title</label><input type="text" id="f-title" placeholder="e.g. Skyline Business Park" value="${esc(d.title)}"></div>
+      <div class="field"><label>Price (₹)</label><input type="number" id="f-price" placeholder="e.g. 4500000" value="${esc(d.price)}"></div>
+      <div class="field"><label>Location</label><input type="text" id="f-location" placeholder="e.g. Pune, Maharashtra" value="${esc(d.location)}"></div>
+      <div class="field">
+        <label>Category</label>
+        <select id="f-category">${window.allCategories.map(c=>`<option value="${esc(c.name)}" ${d.category===c.name?'selected':''}>${esc(c.name)}</option>`).join('') || '<option value="">Add a category first</option>'}</select>
+      </div>
+      <div class="field"><label>Beds / Units (BHK)</label><input type="text" id="f-beds" placeholder="e.g. 4" value="${esc(d.beds)}"></div>
+      <div class="field"><label>Area</label><input type="text" id="f-area" placeholder="e.g. 1200 sqft" value="${esc(d.area)}"></div>
+      <div class="field"><label>Parking</label><input type="text" id="f-parking" placeholder="e.g. 2 Parking" value="${esc(d.parking)}"></div>
+      <div class="field">
+        <label>Photos <span style="font-weight:400;color:var(--muted);">(front photo shown first — upload 20-50 for best results)</span></label>
+        <div class="upload-box" id="ub-propimg">
+          <input type="file" accept="image/*" multiple onchange="handleMultiFiles(this,'propimg')">
+          <div class="upload-icon"><i class="fas fa-images"></i></div>
+          <div><strong>Add project photos</strong><br><small>Pick as many as you like — the first photo becomes the front cover image</small></div>
+        </div>
+        <div class="preview-strip" id="pv-propimg">${(d.images||[]).map((u,i)=>`<div class="preview-thumb" data-url="${esc(u)}">${i===0?'<span style="position:absolute;top:2px;left:2px;background:var(--gold);color:#fff;font-size:0.6rem;font-weight:800;padding:2px 5px;border-radius:5px;z-index:2;">FRONT</span>':''}<img src="${esc(u)}"><div class="rm" onclick="removeExistingImg(this)"><i class="fas fa-xmark"></i></div></div>`).join('')}</div>
+        <div class="progress-wrap" id="pg-propimg"><div class="progress-bar" id="pb-propimg"></div></div>
+      </div>
+      <div class="field"><label>Description (optional)</label><textarea id="f-desc" placeholder="Short description">${esc(d.description)}</textarea></div>
+
+      <div class="subhead">Project overview</div>
+      <div class="field"><label>Total Units</label><input type="text" id="f-totalunits" placeholder="e.g. Limited Edition / 120 Units" value="${esc(d.totalUnits)}"></div>
+      <div class="field"><label>Configuration</label><input type="text" id="f-config" placeholder="e.g. 4 BHK Villas" value="${esc(d.configuration)}"></div>
+      <div class="field"><label>Project Area</label><input type="text" id="f-projarea" placeholder="e.g. 5 Acres" value="${esc(d.projectArea)}"></div>
+      <div class="field"><label>Possession</label><input type="text" id="f-possession" placeholder="e.g. Dec 2026" value="${esc(d.possession)}"></div>
+      <div class="field"><label>RERA Approved</label><select id="f-rera"><option value="Yes" ${d.reraApproved!=='No'?'selected':''}>Yes</option><option value="No" ${d.reraApproved==='No'?'selected':''}>No</option></select></div>
+      <div class="field"><label>Construction Status</label><select id="f-constrstatus"><option value="Under Construction" ${d.constructionStatus!=='Ready to Move'?'selected':''}>Under Construction</option><option value="Ready to Move" ${d.constructionStatus==='Ready to Move'?'selected':''}>Ready to Move</option></select></div>
+
+      <div class="subhead">Location & map</div>
+      <div class="field"><label>Google Maps Link</label><input type="text" id="f-maplink" placeholder="Paste Google Maps share link" value="${esc(d.mapLink)}"><div class="hint">Open Google Maps, find the exact spot, tap Share and paste the link here. Users tapping the map on the user panel will open this exact location.</div></div>
+      <div class="field">
+        <label>Nearby Landmarks</label>
+        <div id="landmarkRows">${(d.landmarks&&d.landmarks.length?d.landmarks:[{name:'',time:''}]).map(l=>landmarkRowHTML(l.name,l.time)).join('')}</div>
+        <button type="button" class="add-row-btn" onclick="addLandmarkRow()"><i class="fas fa-plus"></i> Add landmark</button>
+      </div>
+
+      <div class="subhead">Highlights & amenities</div>
+      <div class="field">
+        <label>Select all that apply</label>
+        <div class="amenity-grid" id="amenityGrid">${AMENITY_LIST.map(a=>`<label class="amenity-check ${(d.amenities||[]).includes(a.key)?'on':''}"><input type="checkbox" value="${a.key}" onchange="this.parentElement.classList.toggle('on',this.checked)" ${(d.amenities||[]).includes(a.key)?'checked':''}><i class="fas ${a.icon}"></i> ${a.label}</label>`).join('')}</div>
+        <div class="hint">The first 4 you tick appear as Project Highlights; all ticked items appear in the Amenities list.</div>
+      </div>
+
+      <div class="field">
+        <label>Show on homepage as</label>
+        <div class="chip-row">
+          <button type="button" class="chip-toggle ${tags.trending?'on':''}" id="chip-trending" onclick="this.classList.toggle('on')">Trending</button>
+          <button type="button" class="chip-toggle ${tags.viral?'on':''}" id="chip-viral" onclick="this.classList.toggle('on')">Most Viral</button>
+          <button type="button" class="chip-toggle ${tags.discounted?'on':''}" id="chip-discounted" onclick="this.classList.toggle('on')">Discounted</button>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" onclick="closeSheet()">Cancel</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveProperty('${d.id||''}')">${d.__editing?'Save changes':'Add project'}</button>
+      </div>`;
+  }
+  if(type==='banner'){
+    return mediaSheetHTML('banner', d, 'Home banner', '16:9 recommended');
+  }
+  if(type==='sbMobile'){
+    return mediaSheetHTML('sbMobile', d, 'Mobile banner', '16:9 ratio works best');
+  }
+  if(type==='sbDesk'){
+    return mediaSheetHTML('sbDesk', d, 'Dashboard banner', '1536 × 515 px works best');
+  }
+  if(type==='gallery'){
+    return `
+      <div class="sheet-handle"></div>
+      <h2>${d.__editing?'Replace image':'Add to gallery'}</h2>
+      <div class="field">
+        <label>Image · square-ish (1:1)</label>
+        <div class="upload-box" id="ub-galimg">
+          <input type="file" accept="image/*" ${d.__editing?'':'multiple'} onchange="handleGalleryFiles(this)">
+          <div class="upload-icon"><i class="fas fa-image"></i></div>
+          <div><strong>${d.__editing?'Tap to choose photo':'Tap to choose photos'}</strong><br><small>${d.__editing?'Square-ish image works best':'Select one or many at once'}</small></div>
+        </div>
+        <div class="upload-err-text" id="ue-galimg">Please choose an image before saving</div>
+        <div class="preview-strip" id="pv-galimg">${d.imageUrl?`<div class="preview-thumb"><img src="${esc(d.imageUrl)}"></div>`:''}</div>
+        <div class="progress-wrap" id="pg-galimg"><div class="progress-bar" id="pb-galimg"></div></div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" onclick="closeSheet()">Cancel</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveGallery('${d.id||''}')">${d.__editing?'Save changes':'Add to gallery'}</button>
+      </div>`;
+  }
+  return '';
+}
+
+function mediaSheetHTML(kind, d, title, hint){
+  return `
+    <div class="sheet-handle"></div>
+    <h2>${d.__editing?'Edit '+title.toLowerCase():'Add '+title.toLowerCase()}</h2>
+    <div class="field">
+      <label>${title} · image or video</label>
+      <div class="upload-box" id="ub-${kind}">
+        <input type="file" accept="image/*,video/*" onchange="handleSingleFile(this,'${kind}')">
+        <div class="upload-icon"><i class="fas fa-photo-film"></i></div>
+        <div><strong>Tap to choose from gallery</strong><br><small>${hint}</small></div>
+      </div>
+      <div class="upload-err-text" id="ue-${kind}">Please choose a file before saving</div>
+      <div class="preview-strip" id="pv-${kind}">${d.imageUrl?`<div class="preview-thumb">${d.mediaType==='video'?`<video src="${esc(d.imageUrl)}" muted></video>`:`<img src="${esc(d.imageUrl)}">`}</div>`:''}</div>
+      <div class="progress-wrap" id="pg-${kind}"><div class="progress-bar" id="pb-${kind}"></div></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveMedia('${kind}','${d.id||''}')">${d.__editing?'Save changes':'Add banner'}</button>
+    </div>`;
+}
+
+/* ---- file selection handlers ---- */
+function flashUploadError(key){
+  const box = document.getElementById('ub-'+key);
+  const errText = document.getElementById('ue-'+key);
+  if(box){ box.classList.remove('err'); void box.offsetWidth; box.classList.add('err'); }
+  if(errText) errText.classList.add('show');
+  toast('Please choose an image or video first', true);
+}
+function clearUploadError(key){
+  const box = document.getElementById('ub-'+key);
+  const errText = document.getElementById('ue-'+key);
+  if(box) box.classList.remove('err');
+  if(errText) errText.classList.remove('show');
+}
+function handleSingleFile(input, key){
+  const file = input.files[0];
+  if(!file) return;
+  clearUploadError(key);
+  pendingFiles[key] = file;
+  const pv = document.getElementById('pv-'+key);
+  const url = URL.createObjectURL(file);
+  const isVideo = file.type.startsWith('video');
+  pv.innerHTML = `<div class="preview-thumb">${isVideo?`<video src="${url}" muted></video>`:`<img src="${url}">`}</div>`;
+}
+function handleMultiFiles(input, key){
+  const files = Array.from(input.files||[]);
+  if(!files.length) return;
+  pendingFiles[key] = (pendingFiles[key]||[]).concat(files);
+  const pv = document.getElementById('pv-'+key);
+  files.forEach(f=>{
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'preview-thumb';
+    div.innerHTML = `<img src="${url}"><div class="rm" onclick="this.parentElement.remove()"><i class="fas fa-xmark"></i></div>`;
+    pv.appendChild(div);
+  });
+  input.value='';
+}
+function removeExistingImg(btn){ btn.closest('.preview-thumb').remove(); }
+
+async function uploadWithProgress(file, key){
+  const pg = document.getElementById('pg-'+key);
+  const pb = document.getElementById('pb-'+key);
+  if(pg){ pg.style.display='block'; }
+  const res = await uploadToCloudinary(file, pct=>{ if(pb) pb.style.width = pct+'%'; });
+  if(pg){ pg.style.display='none'; }
+  return res;
+}
+
+/* ============ CATEGORY ============ */
+window.allCategories = [];
+db.ref('categories').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(c=>{
+      try{ list.push({id:c.key, ...c.val()}); }
+      catch(itemErr){ console.error('Skipped one bad category record ('+c.key+'):', itemErr); }
+    });
+  }
+  window.allCategories = list;
+  console.log('categories from Firebase:', window.allCategories.length, window.allCategories);
+  renderCategories();
+}, err=>{ console.error('categories listener error:', err); toast('Could not load categories — ' + describeErr(err), true); });
+function renderCategories(){
+  try{
+    document.getElementById('catCount').innerText = window.allCategories.length;
+    const box = document.getElementById('catList');
+    if(!window.allCategories.length){ box.innerHTML = emptyState('fa-shapes','No categories yet','Tap + to add your first one'); return; }
+    box.innerHTML = window.allCategories.map(c=>{
+      try{
+        return `<div class="card"><div class="item-row">
+          <img class="thumb" src="${esc(c.imageUrl)||''}" onerror="this.style.background='var(--gold-tint)'">
+          <div class="item-info"><h3>${esc(c.name)||'(no name)'}</h3><p>Category</p></div>
+          <div class="item-actions">
+            <button class="mini-btn edit" onclick="editCategory('${c.id}')"><i class="fas fa-pen"></i></button>
+            <button class="mini-btn del" onclick="deleteItem('categories','${c.id}','category')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div></div>`;
+      }catch(cardErr){
+        console.error('Could not render category card', c && c.id, cardErr);
+        return '';
+      }
+    }).join('');
+  }catch(renderErr){
+    console.error('renderCategories failed:', renderErr);
+    toast('Category list error — ' + describeErr(renderErr), true);
+  }
+}
+function editCategory(id){
+  const c = window.allCategories.find(x=>x.id===id);
+  if(!c){ toast('Could not find that category — try refreshing', true); return; }
+  openSheet('category', id, {...c, __editing:true, id});
+}
+async function saveCategory(id){
+  const name = document.getElementById('f-catname').value.trim();
+  if(!name){ toast('Please enter a category name', true); return; }
+  const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = 'Saving...';
+  try{
+    let imageUrl = editContext.data && editContext.data.imageUrl;
+    if(pendingFiles.catimg){
+      const res = await uploadWithProgress(pendingFiles.catimg, 'catimg');
+      imageUrl = res.secure_url;
+    }
+    if(!imageUrl){ flashUploadError('catimg'); btn.disabled=false; btn.innerText='Add category'; return; }
+    const payload = { name, imageUrl, updatedAt: firebase.database.ServerValue.TIMESTAMP };
+    if(id){ await db.ref('categories/'+id).update(payload); toast('Category updated'); }
+    else{ payload.createdAt = firebase.database.ServerValue.TIMESTAMP; await db.ref('categories').push(payload); toast('Category added'); }
+    closeSheet();
+  }catch(err){ console.error('Save failed:', err); toast(describeErr(err), true); btn.disabled=false; btn.innerText='Save'; }
+}
+
+/* ============ PROPERTY ============ */
+window.allProperties = [];
+db.ref('properties').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(p=>{
+      try{ list.push({id:p.key, ...p.val()}); }
+      catch(itemErr){ console.error('Skipped one bad property record ('+p.key+'):', itemErr); }
+    });
+  }
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  window.allProperties = list;
+  renderProperties();
+}, err=>{ console.error('properties listener error:', err); toast('Could not load properties — ' + describeErr(err), true); });
+function renderProperties(){
+ try{
+  document.getElementById('propCount').innerText = window.allProperties.length;
+  const box = document.getElementById('propList');
+  if(!window.allProperties.length){ box.innerHTML = emptyState('fa-building','No projects yet','Tap + to add your first project'); return; }
+  box.innerHTML = window.allProperties.map(p=>{
+   try{
+    const cover = (p.images&&p.images[0]) || '';
+    return `<div class="card"><div class="item-row">
+      <img class="thumb" src="${esc(cover)}" onerror="this.style.background='var(--gold-tint)'">
+      <div class="item-info"><h3>${esc(p.title)||'(no title)'}</h3><p>${fmtPrice(p.price)} · ${esc(p.location||'')}</p></div>
+      <div class="item-actions">
+        <button class="mini-btn edit" onclick='editProperty("${p.id}")'><i class="fas fa-pen"></i></button>
+        <button class="mini-btn del" onclick="deleteItem('properties','${p.id}','project')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div></div>`;
+   }catch(cardErr){ console.error('Could not render property card', p && p.id, cardErr); return ''; }
+  }).join('');
+ }catch(renderErr){ console.error('renderProperties failed:', renderErr); toast('Property list error — ' + describeErr(renderErr), true); }
+}
+function editProperty(id){
+  const p = window.allProperties.find(x=>x.id===id);
+  openSheet('property', id, {...p, __editing:true, id});
+}
+async function saveProperty(id){
+  const title = document.getElementById('f-title').value.trim();
+  if(!title){ toast('Please enter a title', true); return; }
+  const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = 'Saving...';
+  try{
+    let images = Array.from(document.querySelectorAll('#pv-propimg .preview-thumb[data-url]')).map(el=>el.dataset.url);
+    const newFiles = pendingFiles.propimg || [];
+    for(let i=0;i<newFiles.length;i++){
+      const res = await uploadWithProgress(newFiles[i], 'propimg');
+      images.push(res.secure_url);
+    }
+    const landmarks = Array.from(document.querySelectorAll('#landmarkRows .landmark-row')).map(row=>({
+      name: row.querySelector('.lm-name').value.trim(),
+      time: row.querySelector('.lm-time').value.trim()
+    })).filter(l=>l.name);
+    const amenities = Array.from(document.querySelectorAll('#amenityGrid input:checked')).map(el=>el.value);
+    const payload = {
+      title,
+      price: document.getElementById('f-price').value || '',
+      location: document.getElementById('f-location').value.trim(),
+      category: document.getElementById('f-category').value || '',
+      beds: document.getElementById('f-beds').value.trim(),
+      area: document.getElementById('f-area').value.trim(),
+      parking: document.getElementById('f-parking').value.trim(),
+      description: document.getElementById('f-desc').value.trim(),
+      totalUnits: document.getElementById('f-totalunits').value.trim(),
+      configuration: document.getElementById('f-config').value.trim(),
+      projectArea: document.getElementById('f-projarea').value.trim(),
+      possession: document.getElementById('f-possession').value.trim(),
+      reraApproved: document.getElementById('f-rera').value,
+      constructionStatus: document.getElementById('f-constrstatus').value,
+      mapLink: document.getElementById('f-maplink').value.trim(),
+      landmarks,
+      amenities,
+      images,
+      homeTags: {
+        trending: document.getElementById('chip-trending').classList.contains('on'),
+        viral: document.getElementById('chip-viral').classList.contains('on'),
+        discounted: document.getElementById('chip-discounted').classList.contains('on')
+      },
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    if(id){ await db.ref('properties/'+id).update(payload); toast('Project updated'); }
+    else{ payload.createdAt = firebase.database.ServerValue.TIMESTAMP; await db.ref('properties').push(payload); toast('Project added — live on the user panel now'); }
+    closeSheet();
+  }catch(err){ console.error('Save failed:', err); toast(describeErr(err), true); btn.disabled=false; btn.innerText='Save'; }
+}
+
+/* ============ BANNER (home hero) ============ */
+window.allBanners = [];
+db.ref('banners').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(b=>{ try{ list.push({id:b.key, ...b.val()}); }catch(e){ console.error('Skipped bad banner record ('+b.key+'):', e); } });
+  }
+  list.sort((a,b)=>(a.order||0)-(b.order||0));
+  window.allBanners = list;
+  renderMediaList(window.allBanners, 'bannerList', 'banners', 'banner');
+  document.getElementById('bannerCount').innerText = window.allBanners.length;
+}, err=>{ console.error('banners listener error:', err); toast('Could not load banners — ' + describeErr(err), true); });
+
+/* ============ 2ND BANNER ============ */
+window.sbMobileList = []; window.sbDeskList = [];
+db.ref('secondBannerMobile').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(b=>{ try{ list.push({id:b.key, ...b.val()}); }catch(e){ console.error('Skipped bad mobile-banner record ('+b.key+'):', e); } });
+  }
+  list.sort((a,b)=>(a.order||0)-(b.order||0));
+  window.sbMobileList = list;
+  renderMediaList(window.sbMobileList, 'sbMobileList', 'secondBannerMobile', 'sbMobile', true);
+}, err=>{ console.error('secondBannerMobile listener error:', err); toast('Could not load mobile banners — ' + describeErr(err), true); });
+db.ref('secondBannerDesktop').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(b=>{ try{ list.push({id:b.key, ...b.val()}); }catch(e){ console.error('Skipped bad dashboard-banner record ('+b.key+'):', e); } });
+  }
+  list.sort((a,b)=>(a.order||0)-(b.order||0));
+  window.sbDeskList = list;
+  renderMediaList(window.sbDeskList, 'sbDeskList', 'secondBannerDesktop', 'sbDesk', true);
+}, err=>{ console.error('secondBannerDesktop listener error:', err); toast('Could not load dashboard banners — ' + describeErr(err), true); });
+
+function renderMediaList(list, containerId, refPath, sheetType, wide){
+ try{
+  const box = document.getElementById(containerId);
+  if(!box) return;
+  if(!list.length){ box.innerHTML = emptyState('fa-panorama','Nothing added yet','Tap add below to upload'); return; }
+  box.innerHTML = list.map(b=>{
+   try{
+    const enabled = b.enabled !== false;
+    return `<div class="card"><div class="item-row">
+      ${b.mediaType==='video'
+        ? `<video class="thumb ${wide?'wide':''}" src="${esc(b.imageUrl)}" muted></video>`
+        : `<img class="thumb ${wide?'wide':''}" src="${esc(b.imageUrl)}">`}
+      <div class="item-info"><h3>${b.mediaType==='video'?'Video':'Image'} banner</h3><p>${enabled?'Live on site':'Hidden'}</p></div>
+      <div class="item-actions">
+        <button class="mini-btn tog ${enabled?'on':''}" onclick="toggleEnabled('${refPath}','${b.id}',${enabled})" title="Show/Hide"><i class="fas fa-eye${enabled?'':'-slash'}"></i></button>
+        <button class="mini-btn edit" onclick="editMedia('${sheetType}','${b.id}')"><i class="fas fa-pen"></i></button>
+        <button class="mini-btn del" onclick="deleteItem('${refPath}','${b.id}','item')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div></div>`;
+   }catch(cardErr){ console.error('Could not render media card', b && b.id, cardErr); return ''; }
+  }).join('');
+ }catch(renderErr){ console.error('renderMediaList failed:', renderErr); toast('Banner list error — ' + describeErr(renderErr), true); }
+}
+function editMedia(sheetType, id){
+  const listMap = { banner: window.allBanners, sbMobile: window.sbMobileList, sbDesk: window.sbDeskList };
+  const list = listMap[sheetType] || [];
+  const item = list.find(x=>x.id===id);
+  if(!item){ toast('Could not find that item — try refreshing', true); return; }
+  openSheet(sheetType, id, {...item, __editing:true, id});
+}
+function toggleEnabled(refPath, id, current){
+  db.ref(refPath+'/'+id).update({enabled: !current});
+}
+async function saveMedia(kind, id){
+  const refMap = { banner:'banners', sbMobile:'secondBannerMobile', sbDesk:'secondBannerDesktop' };
+  const refPath = refMap[kind];
+  const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = 'Saving...';
+  try{
+    let imageUrl = editContext.data && editContext.data.imageUrl;
+    let mediaType = editContext.data && editContext.data.mediaType || 'image';
+    if(pendingFiles[kind]){
+      const file = pendingFiles[kind];
+      const res = await uploadWithProgress(file, kind);
+      imageUrl = res.secure_url;
+      mediaType = file.type.startsWith('video') ? 'video' : 'image';
+    }
+    if(!imageUrl){ flashUploadError(kind); btn.disabled=false; btn.innerText='Save'; return; }
+    const payload = { imageUrl, mediaType, enabled:true, updatedAt: firebase.database.ServerValue.TIMESTAMP };
+    if(id){ await db.ref(refPath+'/'+id).update(payload); toast('Updated'); }
+    else{ payload.order = Date.now(); payload.createdAt = firebase.database.ServerValue.TIMESTAMP; await db.ref(refPath).push(payload); toast('Added'); }
+    closeSheet();
+  }catch(err){ console.error('Save failed:', err); toast(describeErr(err), true); btn.disabled=false; btn.innerText='Save'; }
+}
+
+/* ============ GALLERY (animation banner) ============ */
+window.allGallery = [];
+db.ref('animationBanner').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(g=>{ try{ list.push({id:g.key, ...g.val()}); }catch(e){ console.error('Skipped bad gallery record ('+g.key+'):', e); } });
+  }
+  list.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  window.allGallery = list;
+  renderGallery();
+}, err=>{ console.error('animationBanner listener error:', err); toast('Could not load gallery — ' + describeErr(err), true); });
+function renderGallery(){
+ try{
+  document.getElementById('galCount').innerText = window.allGallery.length;
+  const box = document.getElementById('galGrid');
+  if(!window.allGallery.length){ box.innerHTML = `<div style="grid-column:1/-1;">${emptyState('fa-photo-film','No gallery images yet','Tap + to upload one')}</div>`; return; }
+  box.innerHTML = window.allGallery.map(g=>{
+   try{
+    return `<div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--gold-tint);">
+      <img src="${esc(g.imageUrl)}" style="width:100%;height:100%;object-fit:cover;">
+      <button onclick="deleteItem('animationBanner','${g.id}','image')" style="position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;background:rgba(20,17,13,0.65);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.7rem;"><i class="fas fa-trash"></i></button>
+    </div>`;
+   }catch(cardErr){ console.error('Could not render gallery card', g && g.id, cardErr); return ''; }
+  }).join('');
+ }catch(renderErr){ console.error('renderGallery failed:', renderErr); toast('Gallery error — ' + describeErr(renderErr), true); }
+}
+async function saveGallery(id){
+  const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = 'Saving...';
+  try{
+    let imageUrl = editContext.data && editContext.data.imageUrl;
+    if(pendingFiles.galimg){
+      const res = await uploadWithProgress(pendingFiles.galimg, 'galimg');
+      imageUrl = res.secure_url;
+    }
+    if(!imageUrl){ flashUploadError('galimg'); btn.disabled=false; btn.innerText='Save'; return; }
+    if(id){ await db.ref('animationBanner/'+id).update({imageUrl}); toast('Updated'); }
+    else{ await db.ref('animationBanner').push({imageUrl, createdAt: firebase.database.ServerValue.TIMESTAMP}); toast('Added to gallery'); }
+    closeSheet();
+  }catch(err){ console.error('Save failed:', err); toast(describeErr(err), true); btn.disabled=false; btn.innerText='Save'; }
+}
+
+/* ============ CONTACT-FORM SECTIONS (consultations / enquiries / visits / support) ============ */
+function fmtDT(ts){
+  if(!ts) return '';
+  try{ return new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return ''; }
+}
+function contactCardHTML(r, refPath, subtitle){
+  const digits = (r.phone||'').replace(/[^0-9+]/g,'');
+  return `<div class="card">
+    <div class="item-info" style="margin-bottom:10px;">
+      <h3 style="white-space:normal;">${esc(r.name)||'(no name)'}</h3>
+      <p style="white-space:normal;">${esc(subtitle)}</p>
+      <p style="white-space:normal;">${esc(r.phone||'')}${r.email?' · '+esc(r.email):''}</p>
+      ${r.visitDate?`<p style="white-space:normal;">Visit date: ${esc(r.visitDate)}</p>`:''}
+      ${r.message?`<p style="white-space:normal;">${esc(r.message)}</p>`:''}
+      <p style="white-space:normal;color:var(--muted);">${fmtDT(r.createdAt)}</p>
+    </div>
+    <div class="item-actions" style="justify-content:flex-end;">
+      ${digits?`<a class="mini-btn tog" href="tel:${digits}" title="Call"><i class="fas fa-phone"></i></a>
+      <a class="mini-btn tog" href="https://wa.me/${digits.replace('+','')}" target="_blank" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>`:''}
+      <button class="mini-btn del" onclick="deleteItem('${refPath}','${r.id}','request')" title="Delete"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>`;
+}
+
+/* ---- Consultations: homepage "Request Consultation" form -> /consultations ---- */
+window.allConsultations = [];
+db.ref('consultations').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){ snap.forEach(c=>{ try{ list.push({id:c.key, ...c.val()}); }catch(e){ console.error('Skipped bad consultation record ('+c.key+'):', e); } }); }
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  window.allConsultations = list;
+  renderConsultations();
+}, err=>{ console.error('consultations listener error:', err); toast('Could not load consultations — ' + describeErr(err), true); });
+function renderConsultations(){
+  document.getElementById('consultCount').innerText = window.allConsultations.length;
+  const box = document.getElementById('consultList');
+  if(!window.allConsultations.length){ box.innerHTML = emptyState('fa-comments','No consultation requests yet','Homepage "Request Consultation" submissions land here'); return; }
+  box.innerHTML = window.allConsultations.map(r=>contactCardHTML(r,'consultations', r.propertyTitle || 'Consultation request')).join('');
+}
+
+/* ---- Enquiries: "Enquire Now" on a property, stored per-visitor at /enquiries/{uid}/{id} ---- */
+window.allEnquiries = [];
+db.ref('enquiries').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(uidNode=>{
+      uidNode.forEach(rec=>{
+        try{ list.push({id:rec.key, uid:uidNode.key, ...rec.val()}); }
+        catch(e){ console.error('Skipped bad enquiry record ('+rec.key+'):', e); }
+      });
+    });
+  }
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  window.allEnquiries = list;
+  renderEnquiries();
+}, err=>{ console.error('enquiries listener error:', err); toast('Could not load enquiries — ' + describeErr(err), true); });
+function renderEnquiries(){
+  document.getElementById('enqCount').innerText = window.allEnquiries.length;
+  const box = document.getElementById('enqList');
+  if(!window.allEnquiries.length){ box.innerHTML = emptyState('fa-file-signature','No enquiries yet','"Enquire Now" submissions land here'); return; }
+  box.innerHTML = window.allEnquiries.map(r=>contactCardHTML(r,'enquiries/'+r.uid, r.propertyTitle || 'General Inquiry')).join('');
+}
+
+/* ---- Visits: "Schedule Visit" on a property, stored per-visitor at /visits/{uid}/{id} ---- */
+window.allVisits = [];
+db.ref('visits').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(uidNode=>{
+      uidNode.forEach(rec=>{
+        try{ list.push({id:rec.key, uid:uidNode.key, ...rec.val()}); }
+        catch(e){ console.error('Skipped bad visit record ('+rec.key+'):', e); }
+      });
+    });
+  }
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  window.allVisits = list;
+  renderVisits();
+}, err=>{ console.error('visits listener error:', err); toast('Could not load visits — ' + describeErr(err), true); });
+function renderVisits(){
+  document.getElementById('visitCount').innerText = window.allVisits.length;
+  const box = document.getElementById('visitList');
+  if(!window.allVisits.length){ box.innerHTML = emptyState('fa-calendar-check','No visit requests yet','"Schedule Visit" submissions land here'); return; }
+  box.innerHTML = window.allVisits.map(r=>contactCardHTML(r,'visits/'+r.uid, r.propertyTitle || 'Property Visit')).join('');
+}
+
+/* ---- Help & Support: Profile -> Help & Support form -> /supportRequests ---- */
+window.allSupport = [];
+db.ref('supportRequests').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){ snap.forEach(c=>{ try{ list.push({id:c.key, ...c.val()}); }catch(e){ console.error('Skipped bad support record ('+c.key+'):', e); } }); }
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  window.allSupport = list;
+  renderSupport();
+}, err=>{ console.error('supportRequests listener error:', err); toast('Could not load support requests — ' + describeErr(err), true); });
+function renderSupport(){
+  document.getElementById('supCount').innerText = window.allSupport.length;
+  const box = document.getElementById('supList');
+  if(!window.allSupport.length){ box.innerHTML = emptyState('fa-headset','No support requests yet','Help & Support submissions land here'); return; }
+  box.innerHTML = window.allSupport.map(r=>contactCardHTML(r,'supportRequests', 'Help & Support')).join('');
+}
+
+/* ---- Live visitors right now, from /liveVisitors ---- */
+db.ref('liveVisitors').on('value', snap=>{
+  const el = document.getElementById('liveCount');
+  if(el) el.innerText = snap.exists() ? snap.numChildren() : 0;
+}, err=>{ console.error('liveVisitors listener error:', err); });
+
+/* ============ SHARED ============ */
+function emptyState(icon, title, sub){
+  return `<div class="empty"><i class="fas ${icon}"></i><p><strong style="display:block;color:var(--ink);margin-bottom:4px;">${title}</strong>${sub}</p></div>`;
+}
+function deleteItem(refPath, id, label){
+  if(!confirm(`Delete this ${label}? This cannot be undone.`)) return;
+  db.ref(refPath+'/'+id).remove()
+    .then(()=>toast('Deleted'))
+    .catch(err=>{
+      console.error('Delete failed:', err);
+      toast('Could not delete — ' + describeErr(err), true);
+    });
+}
+
+/* =====================================================================
+   V2 ADDITIONS — nothing above this line was removed
+   ===================================================================== */
+
+/* --- tab switching: keep original logic, add motion + dock centering --- */
+(function(){
+  const _goTab = goTab;
+  goTab = function(tab){
+    _goTab(tab);
+    const v = document.getElementById('view-'+tab);
+    if(v){ v.classList.add('anim'); clearTimeout(v._t); v._t = setTimeout(()=>v.classList.remove('anim'), 900); }
+    const a = document.querySelector('#bottomNav .tab-pill.active');
+    if(a && a.scrollIntoView){ try{ a.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}); }catch(e){} }
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.goTab = goTab;
+})();
+
+/* --- overview: animated counters, badges, latest leads --- */
+function countTo(el, to){
+  const from = Number(el.dataset.v || 0);
+  el.dataset.v = to;
+  if(from === to){ el.innerText = to; return; }
+  const t0 = performance.now(), dur = 650;
+  (function step(t){
+    const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3);
+    el.innerText = Math.round(from + (to-from)*e);
+    if(p<1) requestAnimationFrame(step);
+  })(t0);
+}
+function updateOverview(){
+  const len = k => (window[k]||[]).length;
+  document.querySelectorAll('[data-stat]').forEach(el=>{
+    const k = el.dataset.stat;
+    countTo(el, k==='__sb' ? len('sbMobileList')+len('sbDeskList') : len(k));
+  });
+  [['consultations','allConsultations'],['enquiries','allEnquiries'],['visits','allVisits'],['support','allSupport']].forEach(([tab,k])=>{
+    const b = document.getElementById('nb-'+tab), n = len(k);
+    if(!b) return;
+    b.innerText = n>99 ? '99+' : n;
+    b.classList.toggle('show', n>0);
+  });
+  const feed = []
+    .concat((window.allConsultations||[]).map(r=>({r, tab:'consultations', icon:'fa-comments', sub:r.propertyTitle||'Consultation request'})))
+    .concat((window.allEnquiries||[]).map(r=>({r, tab:'enquiries', icon:'fa-file-signature', sub:r.propertyTitle||'General enquiry'})))
+    .concat((window.allVisits||[]).map(r=>({r, tab:'visits', icon:'fa-calendar-check', sub:(r.propertyTitle||'Property visit')+(r.visitDate?' · '+r.visitDate:'')})))
+    .concat((window.allSupport||[]).map(r=>({r, tab:'support', icon:'fa-headset', sub:'Help & Support'})))
+    .sort((a,b)=>(b.r.createdAt||0)-(a.r.createdAt||0)).slice(0,6);
+  const box = document.getElementById('activityList');
+  if(!box) return;
+  if(!feed.length){ box.innerHTML = emptyState('fa-inbox','No leads yet','New consultations, enquiries and visit requests will appear here'); return; }
+  box.innerHTML = feed.map(x=>`<div class="card"><button class="act-row" onclick="goTab('${x.tab}')">
+      <div class="act-ic"><i class="fas ${x.icon}"></i></div>
+      <div class="item-info"><h3>${esc(x.r.name)||'(no name)'}</h3><p>${esc(x.sub)}${x.r.phone?' · '+esc(x.r.phone):''}</p></div>
+      <div class="act-time">${esc(fmtDT(x.r.createdAt))}</div>
+    </button></div>`).join('');
+}
+['renderCategories','renderProperties','renderGallery','renderConsultations','renderEnquiries','renderVisits','renderSupport','renderMediaList'].forEach(n=>{
+  const f = window[n];
+  if(typeof f !== 'function') return;
+  window[n] = function(){ const r = f.apply(this, arguments); try{ updateOverview(); }catch(e){ console.error(e); } return r; };
+});
+(function(){
+  const h = new Date().getHours();
+  const g = document.getElementById('greet');
+  if(g) g.innerText = h<12 ? 'Good morning' : h<17 ? 'Good afternoon' : 'Good evening';
+  const live = document.getElementById('liveCount'), ov = document.getElementById('ovLive');
+  if(live && ov){ new MutationObserver(()=>{ ov.innerText = live.innerText; }).observe(live,{childList:true,characterData:true,subtree:true}); ov.innerText = live.innerText; }
+  const first = document.getElementById('view-overview'); if(first) first.classList.add('anim');
+  updateOverview();
+})();
+
+/* --- gallery: pick many photos at once from the phone gallery --- */
+window.handleGalleryFiles = function(input){
+  const files = Array.from(input.files||[]);
+  if(!files.length) return;
+  clearUploadError('galimg');
+  const editing = !!(editContext && editContext.id);
+  const pv = document.getElementById('pv-galimg');
+  const use = editing ? [files[0]] : files;
+  if(editing){ pendingFiles.galimg = [files[0]]; pv.innerHTML = ''; }
+  else { pendingFiles.galimg = (pendingFiles.galimg||[]).concat(files); }
+  use.forEach(f=>{
+    const div = document.createElement('div');
+    div.className = 'preview-thumb';
+    div.innerHTML = `<img src="${URL.createObjectURL(f)}">` + (editing ? '' : '<div class="rm"><i class="fas fa-xmark"></i></div>');
+    const rm = div.querySelector('.rm');
+    if(rm) rm.onclick = ()=>{ pendingFiles.galimg = (pendingFiles.galimg||[]).filter(x=>x!==f); div.remove(); };
+    pv.appendChild(div);
+  });
+  input.value = '';
+};
+window.saveGallery = async function(id){
+  const btn = document.getElementById('saveBtn');
+  const idle = id ? 'Save changes' : 'Add to gallery';
+  btn.disabled = true; btn.innerText = 'Saving...';
+  try{
+    const files = pendingFiles.galimg || [];
+    if(id){
+      let imageUrl = editContext.data && editContext.data.imageUrl;
+      if(files[0]){ imageUrl = (await uploadWithProgress(files[0], 'galimg')).secure_url; }
+      if(!imageUrl){ flashUploadError('galimg'); btn.disabled=false; btn.innerText=idle; return; }
+      await db.ref('animationBanner/'+id).update({imageUrl});
+      toast('Updated');
+    } else {
+      if(!files.length){ flashUploadError('galimg'); btn.disabled=false; btn.innerText=idle; return; }
+      for(let i=0;i<files.length;i++){
+        btn.innerText = files.length>1 ? `Uploading ${i+1} of ${files.length}...` : 'Uploading...';
+        const res = await uploadWithProgress(files[i], 'galimg');
+        await db.ref('animationBanner').push({imageUrl:res.secure_url, createdAt: firebase.database.ServerValue.TIMESTAMP});
+      }
+      toast(files.length>1 ? files.length+' images added to gallery' : 'Added to gallery');
+    }
+    closeSheet();
+  }catch(err){ console.error('Save failed:', err); toast(describeErr(err), true); btn.disabled=false; btn.innerText=idle; }
+};
+
+/* ===================== V3 ADDITIONS ===================== */
+const LEADSRC=[['allConsultations',r=>'consultations/'+r.id,'consultation'],['allEnquiries',r=>'enquiries/'+r.uid+'/'+r.id,'enquiry'],['allVisits',r=>'visits/'+r.uid+'/'+r.id,'visit request'],['allSupport',r=>'supportRequests/'+r.id,'support message']];
+const VIEWKIND={consultations:0,enquiries:1,visits:2,support:3};
+
+/* --- auth: load / clear data, idle lock, attempt cooldown --- */
+let idleT, armed=false; const seen=new Set();
+function bump(){ clearTimeout(idleT); if(isAdmin()) idleT=setTimeout(()=>{ auth.signOut(); },15*60*1000); }
+['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,bump,{passive:true}));
+auth.onAuthStateChanged(u=>{
+  if(u && u.email===ADMIN_EMAIL){ startData(); bump(); setTimeout(()=>{armed=true;},4000); }
+  else { stopData(); armed=false; seen.clear(); clearTimeout(idleT); closeSheet(); selMode=false; sel.clear(); document.body.classList.remove('selmode'); }
+});
+(function(){
+  const _tu=tryUnlock; let fails=0, until=0;
+  tryUnlock=async function(){
+    const left=Math.ceil((until-Date.now())/1000);
+    if(left>0){ document.getElementById('lockErr').innerText='Too many attempts. Wait '+left+'s'; return; }
+    await _tu();
+    if(document.getElementById('lockErr').innerText){ if(++fails>=5){ until=Date.now()+30000; fails=0; document.getElementById('lockErr').innerText='Too many attempts. Wait 30s'; } }
+    else fails=0;
+  };
+})();
+(function(){ const _u=uploadToCloudinary;
+  uploadToCloudinary=function(f,p){
+    if(!/^(image|video)\//.test(f.type)) return Promise.reject('Only image and video files can be uploaded');
+    const mb=f.type.startsWith('video')?100:15;
+    if(f.size>mb*1048576) return Promise.reject(f.name+' is larger than '+mb+' MB');
+    return _u(f,p);
+  };
+})();
+
+/* --- dialogs --- */
+function askConfirm(title,msg,yes){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg';
+    d.innerHTML=`<div><h3>${esc(title)}</h3><p>${esc(msg)}</p><div class="row"><button class="btn btn-ghost">Cancel</button><button class="btn btn-primary" style="background:var(--danger)">${esc(yes||'Delete')}</button></div></div>`;
+    const done=v=>{d.remove();res(v);};
+    d.querySelectorAll('button')[0].onclick=()=>done(false);
+    d.querySelectorAll('button')[1].onclick=()=>done(true);
+    d.onclick=e=>{if(e.target===d)done(false);};
+    document.body.appendChild(d);
+  });
+}
+const RULES=`".read": "auth != null && auth.token.email == '${ADMIN_EMAIL}'",
+".write": "auth != null && auth.token.email == '${ADMIN_EMAIL}'",`;
+function permHelp(err){
+  const denied=err&&(err.code==='PERMISSION_DENIED'||/permission/i.test(err.message||''));
+  if(!denied){ toast(describeErr(err),true); return; }
+  document.getElementById('sheetBody').innerHTML=`<div class="sheet-handle"></div><h2>Firebase is blocking this action</h2>
+   <p class="hint" style="font-size:.85rem;line-height:1.5">Your rules let each visitor write only to their own enquiries and visits, so the admin account cannot delete them. In Firebase, open Realtime Database, then Rules. On lines 3 and 4, where it says <b>false</b>, replace both lines with the two lines below, then press Publish. Leave everything else as it is.</p>
+   <div class="rules">${esc(RULES)}</div>
+   <div class="sheet-actions"><button class="btn btn-ghost" onclick="closeSheet()">Close</button><button class="btn btn-primary" onclick="navigator.clipboard&&navigator.clipboard.writeText(RULES).then(()=>toast('Rules copied'))">Copy rules</button></div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+}
+deleteItem=async function(refPath,id,label){
+  if(!await askConfirm('Delete this '+label+'?','This cannot be undone.')) return;
+  try{ await db.ref(refPath+'/'+id).remove(); toast('Deleted'); }catch(err){ console.error(err); permHelp(err); }
+};
+
+/* --- leads: read, search, select, bulk delete, export --- */
+let leadQ='', selMode=false; const sel=new Set(); window._leads={};
+const readSet=new Set(JSON.parse(localStorage.getItem('vh_read')||'[]'));
+const saveRead=()=>{ try{localStorage.setItem('vh_read',JSON.stringify([...readSet].slice(-2000)));}catch(e){} };
+function ago(ts){ if(!ts) return ''; const m=Math.floor((Date.now()-ts)/60000); if(m<1) return 'just now'; if(m<60) return m+' min ago'; const h=Math.floor(m/60); if(h<24) return h+' hr ago'; const d=Math.floor(h/24); return d<30?d+' d ago':fmtDT(ts); }
+const cleanPhone=p=>(p||'').replace(/[^0-9+]/g,'');
+const pick=(o,ks)=>{ for(const k of ks){ if(o[k]!==undefined&&o[k]!==null&&String(o[k]).trim()!=='') return o[k]; } return ''; };
+const normLead=r=>Object.assign({},r,{name:pick(r,['name','fullName','userName','username','customerName','clientName']),phone:pick(r,['phone','mobile','phoneNumber','contact','whatsapp']),email:pick(r,['email','mail']),message:pick(r,['message','msg','note','notes','query','details','comment'])});
+const KNOWN=['id','uid','name','phone','email','message','visitDate','propertyTitle','createdAt'];
+const prettyK=k=>k.replace(/([A-Z])/g,' $1').replace(/[_-]/g,' ').replace(/^./,c=>c.toUpperCase());
+contactCardHTML=function(r,refPath,subtitle){
+  r=normLead(r);
+  const k=refPath+'/'+r.id; window._leads[k]={r,refPath,subtitle};
+  const hay=[r.name,r.phone,r.email,r.message,subtitle].join(' ').toLowerCase();
+  if(leadQ && !hay.includes(leadQ)) return '';
+  const d=cleanPhone(r.phone), un=!readSet.has(k);
+  return `<div class="card lead ${un?'unread':''} ${sel.has(k)?'sel':''}" data-k="${esc(k)}" onclick="leadTap('${esc(k)}')">
+    <div class="item-row"><div class="ck"><i class="fas fa-check"></i></div>
+      <div class="item-info"><h3>${un?'<span class="udot"></span>':''}${esc(r.name)||'(no name)'}</h3><p>${esc(subtitle)}</p><p>${esc(r.phone||'')} · ${esc(ago(r.createdAt))}</p></div>
+      <div class="item-actions" onclick="event.stopPropagation()">
+        ${d?`<a class="mini-btn tog" href="tel:${d}" rel="noopener"><i class="fas fa-phone"></i></a><a class="mini-btn tog" href="https://wa.me/${d.replace('+','')}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i></a>`:''}
+        <button class="mini-btn del" onclick="deleteItem('${refPath}','${r.id}','lead')"><i class="fas fa-trash"></i></button>
+      </div></div></div>`;
+};
+function rerenderLeads(){ renderConsultations(); renderEnquiries(); renderVisits(); renderSupport(); }
+function leadTap(k){
+  if(selMode){ sel.has(k)?sel.delete(k):sel.add(k); rerenderLeads(); bulkUI(); return; }
+  const L=window._leads[k]; if(!L) return; const {r,refPath,subtitle}=L; const d=cleanPhone(r.phone);
+  readSet.add(k); saveRead(); rerenderLeads();
+  document.getElementById('sheetBody').innerHTML=`<div class="sheet-handle"></div><h2>${esc(r.name)||'(no name)'}</h2>
+    <div class="dl"><small>Type</small><span>${esc(subtitle)}</span></div>
+    ${r.phone?`<div class="dl"><small>Phone</small><span>${esc(r.phone)}</span></div>`:''}
+    ${r.email?`<div class="dl"><small>Email</small><span>${esc(r.email)}</span></div>`:''}
+    ${r.visitDate?`<div class="dl"><small>Visit date</small><span>${esc(r.visitDate)}</span></div>`:''}
+    <div class="dl"><small>Received</small><span>${esc(r.createdAt?fmtDT(r.createdAt):'Date not recorded')}</span></div>
+    ${Object.entries(r).filter(([a,v])=>!KNOWN.includes(a)&&['string','number','boolean'].includes(typeof v)&&String(v).trim()!==''&&!['name','phone','email','message'].includes(a)).map(([a,v])=>`<div class="dl"><small>${esc(prettyK(a))}</small><span>${esc(String(v))}</span></div>`).join('')}
+    <div class="dl"><small>Record ID</small><span style="font-size:.72rem">${esc(r.id)}</span></div>
+    ${r.message?`<div class="dl" style="display:block"><small>Message</small><p style="margin-top:6px;line-height:1.55;white-space:pre-wrap;word-break:break-word">${esc(r.message)}</p></div>`:''}
+    <div class="sheet-actions" style="flex-wrap:wrap">
+      ${d?`<a class="btn btn-ghost" href="tel:${d}">Call</a><a class="btn btn-ghost" href="https://wa.me/${d.replace('+','')}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`:''}
+      <button class="btn btn-ghost" onclick="readSet.delete('${esc(k)}');saveRead();rerenderLeads();closeSheet()">Mark unread</button>
+      <button class="btn btn-primary" style="background:var(--danger)" onclick="closeSheet();deleteItem('${refPath}','${r.id}','lead')">Delete</button>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+}
+function setLeadFilter(v){ leadQ=(v||'').trim().toLowerCase(); document.querySelectorAll('.lead-tools input').forEach(i=>{ if(i.value!==v) i.value=v; }); rerenderLeads(); }
+function toggleSel(){ selMode=!selMode; if(!selMode) sel.clear(); document.body.classList.toggle('selmode',selMode); document.querySelectorAll('.tool.selbtn').forEach(b=>b.classList.toggle('on',selMode)); rerenderLeads(); bulkUI(); }
+function visibleKeys(){ return [...document.querySelectorAll('.view.active .card.lead')].map(c=>c.dataset.k); }
+function bulkUI(){
+  let b=document.getElementById('bulkBar');
+  if(!b){ b=document.createElement('div'); b.id='bulkBar'; b.className='bulkbar';
+    b.innerHTML='<span id="bulkN"></span><button onclick="selAll()">Select all</button><button class="dz" onclick="bulkDelete()">Delete</button><button onclick="toggleSel()">Done</button>'; document.body.appendChild(b); }
+  document.getElementById('bulkN').innerText=sel.size+' selected';
+  b.classList.toggle('show',selMode);
+}
+function selAll(){ visibleKeys().forEach(k=>sel.add(k)); rerenderLeads(); bulkUI(); }
+async function bulkDelete(){
+  if(!sel.size){ toast('Select at least one lead',true); return; }
+  if(!await askConfirm('Delete '+sel.size+' lead'+(sel.size>1?'s':'')+'?','They will be removed permanently.')) return;
+  const upd={}; sel.forEach(k=>upd[k]=null);
+  try{ await db.ref().update(upd); toast(sel.size+' deleted'); sel.clear(); toggleSel(); }catch(err){ console.error(err); permHelp(err); }
+}
+function exportLeads(i){
+  const [arr,,name]=LEADSRC[i]; const rows=window[arr]||[];
+  if(!rows.length){ toast('Nothing to export yet',true); return; }
+  const q=v=>{ v=String(v==null?'':v); if(/^[=+\-@]/.test(v)) v="'"+v; return '"'+v.replace(/"/g,'""')+'"'; };
+  const csv=['Name,Phone,Email,Property,Visit date,Message,Received'].concat(rows.map(r=>[r.name,r.phone,r.email,r.propertyTitle,r.visitDate,r.message,r.createdAt?new Date(r.createdAt).toISOString():''].map(q).join(','))).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'})); a.download='viharamba-'+name.replace(' ','-')+'s.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+['consultList','enqList','visitList','supList'].forEach((id,i)=>{
+  document.getElementById(id).insertAdjacentHTML('beforebegin',`<div class="lead-tools"><div class="search"><i class="fas fa-search"></i><input type="search" placeholder="Search name, phone or message" oninput="setLeadFilter(this.value)"></div><button class="tool selbtn" title="Select several" onclick="toggleSel()"><i class="fas fa-check-double"></i></button><button class="tool" title="Export CSV" onclick="exportLeads(${i})"><i class="fas fa-file-csv"></i></button></div>`);
+});
+
+/* --- gallery: edit button --- */
+(function(){ const _rg=window.renderGallery;
+  window.renderGallery=function(){ _rg.apply(this,arguments);
+    document.querySelectorAll('#galGrid>div[style*="aspect"]').forEach((el,i)=>{ const g=window.allGallery[i]; if(g) el.insertAdjacentHTML('beforeend',`<button class="gal-edit" onclick="openSheet('gallery','${g.id}',{...window.allGallery[${i}],__editing:true,id:'${g.id}'})"><i class="fas fa-pen"></i></button>`); });
+  };
+})();
+
+/* --- charts --- */
+let demoMode=false, CHghost=false;
+const TYPECOL=['#4DA3FF','#E6BF6E','#3EDC7A','#A78BFA'], TYPENAME=['Consultations','Enquiries','Visits','Support'];
+function daySeries(){
+  const D=14, n=new Date(), t0=new Date(n.getFullYear(),n.getMonth(),n.getDate()-(D-1)).getTime();
+  const days=Array.from({length:D},(_,i)=>({t:t0+i*864e5,n:0,k:[0,0,0,0]})); let base=0;
+  if(demoMode){ [[0,1,0,0],[1,0,1,0],[0,2,0,0],[1,1,1,0],[2,1,0,0],[1,2,1,0],[0,1,1,1],[2,2,1,0],[3,2,1,1],[1,1,0,0],[2,2,2,0],[3,3,1,1],[2,2,2,1],[4,3,2,1]].forEach((k,i)=>{days[i].k=k;days[i].n=k.reduce((a,b)=>a+b,0);}); }
+  else LEADSRC.forEach(([arr],ti)=>(window[arr]||[]).forEach(r=>{ const t=r.createdAt; if(!t) return; if(t<t0){ base++; return; } const i=Math.floor((t-t0)/864e5); if(i>=0&&i<D){ days[i].n++; days[i].k[ti]++; } }));
+  let cum=base; return days.map(d=>{ const o=cum; cum+=d.n; const wick=d.n?Math.max(1,Math.round(d.n*.3)):0; return {t:d.t,o,c:cum,h:cum+wick,l:Math.max(0,o-(d.n>1?1:0)),n:d.n,k:d.k}; });
+}
+let CH=[], chT=null;
+function fit(c){ const dpr=window.devicePixelRatio||1, w=c.clientWidth, h=c.clientHeight; if(!w) return null; c.width=w*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); return {x,w,h}; }
+function drawCharts(p){
+  const data=daySeries(); CH=data; const D=data.length, total=data.reduce((q,d)=>q+d.n,0); CHghost=(total===0);
+  document.getElementById('chTotal').innerText=total;
+  const sp=document.querySelector('.chart-top span'); if(sp) sp.innerText=demoMode?'DEMO data, not real leads':'leads in 14 days';
+  const db=document.getElementById('demoBtn'); if(db) db.innerText=demoMode?'Show real':'Preview';
+  const ph=CHghost?[3,4,3.6,5,4.4,5.6,5,6.4,5.8,7,6.2,7.6,7,8.2]:null, now=performance.now();
+  const A=fit(document.getElementById('candle')); if(A){
+    const {x,w,h}=A, top=14, bot=h-24, L=8, R=w-30, cw=(R-L)/D, lo=ph?0:data[0].o, hi=ph?9:Math.max(data[D-1].h, lo+5), span=hi-lo;
+    const Y=v=>bot-((v-lo)/span)*(bot-top)*(ph?1:p);
+    x.clearRect(0,0,w,h); x.font='10px Inter,sans-serif'; x.lineWidth=1;
+    for(let g=0;g<=4;g++){ const y=top+(bot-top)*g/4; x.strokeStyle='rgba(255,255,255,.08)'; x.beginPath(); x.moveTo(L,y); x.lineTo(R,y); x.stroke(); if(!ph){ x.fillStyle='#8f8573'; x.textAlign='left'; x.fillText(Math.round(hi-span*g/4),R+6,y+3); } }
+    for(let i=0;i<D;i++){ const cx=L+i*cw+cw/2; x.strokeStyle='rgba(255,255,255,.04)'; x.beginPath(); x.moveTo(cx,top); x.lineTo(cx,bot); x.stroke(); }
+    if(ph){
+      x.globalAlpha=.28; ph.forEach((v,i)=>{ const cx=L+i*cw+cw/2, up=i%3!==2, col=up?'#3EDC7A':'#E5533D', o=v-(up?1:-.7), bw=Math.min(16,Math.max(5,cw*.55)); x.fillStyle=x.strokeStyle=col; x.lineWidth=1.5; x.beginPath(); x.moveTo(cx,Y(Math.max(v,o)+.6)); x.lineTo(cx,Y(Math.min(v,o)-.6)); x.stroke(); x.fillRect(cx-bw/2,Y(Math.max(v,o)),bw,Math.max(2,Y(Math.min(v,o))-Y(Math.max(v,o)))); }); x.globalAlpha=1;
+      const sx=L+((now/12)%(R-L)); const g=x.createLinearGradient(sx-60,0,sx,0); g.addColorStop(0,'rgba(230,191,110,0)'); g.addColorStop(1,'rgba(230,191,110,.35)'); x.fillStyle=g; x.fillRect(sx-60,top,60,bot-top);
+      x.fillStyle='#E6BF6E'; x.font='600 12px Inter,sans-serif'; x.textAlign='center'; x.fillText('Waiting for new leads. The chart goes live as they arrive.',w/2,h/2-6); x.fillStyle='#8f8573'; x.font='11px Inter,sans-serif'; x.fillText('Tap Preview to see how it looks with sample data',w/2,h/2+14);
+    } else {
+      const pts=data.map((d,i)=>[L+i*cw+cw/2,Y(d.c)]), ag=x.createLinearGradient(0,top,0,bot); ag.addColorStop(0,'rgba(77,163,255,.28)'); ag.addColorStop(1,'rgba(77,163,255,0)');
+      x.beginPath(); x.moveTo(pts[0][0],bot); pts.forEach(q=>x.lineTo(q[0],q[1])); x.lineTo(pts[D-1][0],bot); x.closePath(); x.fillStyle=ag; x.fill();
+      x.beginPath(); pts.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1])); x.strokeStyle='rgba(77,163,255,.9)'; x.lineWidth=2; x.shadowColor='#4DA3FF'; x.shadowBlur=10; x.stroke(); x.shadowBlur=0;
+      data.forEach((d,i)=>{ const cx=L+i*cw+cw/2, flat=d.n===0, col=flat?'#D2A24C':'#3EDC7A', bw=Math.min(16,Math.max(5,cw*.55));
+        x.strokeStyle=col; x.fillStyle=col; x.lineWidth=1.6; x.beginPath(); x.moveTo(cx,Y(d.h)); x.lineTo(cx,Y(d.l)); x.stroke();
+        x.shadowColor=col; x.shadowBlur=flat?0:10; const y1=Y(d.c), y2=Y(d.o); x.fillRect(cx-bw/2,y1,bw,Math.max(2.5,y2-y1)); x.shadowBlur=0; });
+      const ly=Y(data[D-1].c); x.setLineDash([3,4]); x.strokeStyle='rgba(230,191,110,.85)'; x.lineWidth=1; x.beginPath(); x.moveTo(L,ly); x.lineTo(R,ly); x.stroke(); x.setLineDash([]);
+      x.fillStyle='#E6BF6E'; x.fillRect(R+1,ly-8,27,16); x.fillStyle='#17120d'; x.font='bold 10px Inter,sans-serif'; x.textAlign='center'; x.fillText(data[D-1].c,R+14.5,ly+3.5);
+    }
+    x.font='9.5px Inter,sans-serif'; x.fillStyle='#8f8573'; x.textAlign='center';
+    data.forEach((d,i)=>{ if(i%3===(D-1)%3){ const cx=L+i*cw+cw/2; x.fillText(new Date(d.t).toLocaleDateString('en-IN',{day:'numeric',month:'short'}).replace(' ',' '),Math.min(R-12,Math.max(L+12,cx)),h-8); } });
+  }
+  const B=fit(document.getElementById('lineC')); if(B){
+    const {x,w,h}=B, L=8, R=w-30, cw=(R-L)/D, mx=Math.max(4,...data.map(d=>d.n)); x.clearRect(0,0,w,h);
+    x.fillStyle='#8f8573'; x.font='10px Inter,sans-serif'; x.textAlign='left'; x.fillText('Leads per day',L,10);
+    data.forEach((d,i)=>{ const bw=Math.min(16,Math.max(5,cw*.55)), cx=L+i*cw+cw/2, uh=(h-28)/mx*(ph?1:p); let y=h-2;
+      if(ph){ const v=[1,2,1,3,2,3,2,4,3,4,3,5,4,5][i]; x.fillStyle='rgba(255,255,255,.08)'; x.fillRect(cx-bw/2,y-v*uh,bw,v*uh); return; }
+      if(!d.n){ x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(cx-bw/2,y-1.5,bw,1.5); return; }
+      d.k.forEach((c,ti)=>{ if(!c) return; const bh=c*uh; x.fillStyle=TYPECOL[ti]; x.fillRect(cx-bw/2,y-bh,bw,bh-.6); y-=bh; });
+      x.fillStyle='#fff'; x.font='600 10px Inter,sans-serif'; x.textAlign='center'; x.fillText(d.n,cx,y-4); });
+  }
+}
+function animCharts(){ const t0=performance.now(); cancelAnimationFrame(chT); (function f(t){ const p=Math.min(1,(t-t0)/800), e=1-Math.pow(1-p,3); drawCharts(e); if((p<1||CHghost) && document.getElementById('view-overview').classList.contains('active')) chT=requestAnimationFrame(f); })(t0); }
+function toggleDemo(){ demoMode=!demoMode; animCharts(); }
+addEventListener('resize',()=>{ if(document.getElementById('view-overview').classList.contains('active')) drawCharts(1); });
+(function(){ const c=document.getElementById('candle'), tip=document.getElementById('ctip');
+  const mv=e=>{ const r=c.getBoundingClientRect(), i=Math.floor((e.clientX-r.left)/(r.width/14)), d=CH[i]; if(!d){tip.style.display='none';return;}
+    tip.innerHTML='<b>'+new Date(d.t).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+'</b><br>New leads: '+d.n+'<br>'+d.k.map((c,i)=>c?'<span style="color:'+TYPECOL[i]+'">● '+TYPENAME[i]+' '+c+'</span>':'').join(' ')+'<br>Running total: '+d.c;
+    tip.style.display='block'; tip.style.left=Math.min(r.width-130,Math.max(0,e.clientX-r.left-50))+'px'; tip.style.top='4px'; };
+  c.addEventListener('pointermove',mv); c.addEventListener('pointerdown',mv); c.addEventListener('pointerleave',()=>tip.style.display='none'); })();
+
+/* --- new-lead alert --- */
+function chime(){ try{ const a=new (window.AudioContext||window.webkitAudioContext)(); [660,880].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=f; o.connect(g); g.connect(a.destination); const t=a.currentTime+i*.14; g.gain.setValueAtTime(.001,t); g.gain.exponentialRampToValueAtTime(.15,t+.02); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.start(t); o.stop(t+.32); }); }catch(e){} }
+function leadAlerts(){
+  LEADSRC.forEach(([arr,keyf,label])=>(window[arr]||[]).forEach(r=>{ const k=keyf(r); if(seen.has(k)) return; seen.add(k);
+    if(armed && r.createdAt && Date.now()-r.createdAt<300000){ chime(); if(navigator.vibrate) navigator.vibrate([90,60,90]); toast('New '+label+' from '+(r.name||'a visitor')); } }));
+}
+(function(){ const _uo=updateOverview; let t=null;
+  updateOverview=function(){ _uo(); leadAlerts(); clearTimeout(t); t=setTimeout(()=>{ if(document.getElementById('view-overview').classList.contains('active')) animCharts(); },150); };
+  const _g=goTab; goTab=function(tab){ _g(tab); window.goTab=goTab; if(tab==='overview') setTimeout(animCharts,60); if(selMode) toggleSel(); };
+  window.goTab=goTab; document.getElementById('fabBtn').style.display='none'; setTimeout(animCharts,300);
+})();
+
+/* --- 3D tilt (mouse only) --- */
+if(matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+  document.addEventListener('pointermove',e=>{
+    const el=e.target.closest&&e.target.closest('.stat,.card'); 
+    if(window._tl&&window._tl!==el){ window._tl.style.setProperty('--rx','0deg'); window._tl.style.setProperty('--ry','0deg'); }
+    window._tl=el; if(!el) return; const r=el.getBoundingClientRect();
+    el.style.setProperty('--ry',(((e.clientX-r.left)/r.width-.5)*10).toFixed(2)+'deg'); el.style.setProperty('--rx',(-((e.clientY-r.top)/r.height-.5)*10).toFixed(2)+'deg');
+  },{passive:true});
+}
+
+/* ===================== V4 COMMAND-CENTER HOME ===================== */
+let termT, termDone=false;
+function termLines(){ const h=window._hud||{total:0,unread:0}; return ['> boot control-room --secure','> firebase realtime sync ........ OK','> admin session verified ....... OK','> leads indexed: '+h.total+'   unread: '+h.unread+'   status: ONLINE']; }
+function typeTerm(){
+  const el=document.getElementById('term'); if(!el) return; clearTimeout(termT); termDone=false;
+  const L=termLines(); let li=0, ci=0;
+  (function st(){
+    let out=L.slice(0,li).join('\n'); if(li<L.length) out+=(li?'\n':'')+L[li].slice(0,ci);
+    el.innerHTML=esc(out)+'<span class="cur">█</span>';
+    if(li>=L.length){ termDone=true; return; }
+    if(++ci>L[li].length){ li++; ci=0; termT=setTimeout(st,170); } else termT=setTimeout(st,14);
+  })();
+}
+function renderTerm(){ if(!termDone) return; const el=document.getElementById('term'); if(el) el.innerHTML=esc(termLines().join('\n'))+'<span class="cur">█</span>'; }
+function hudStats(){
+  let total=0,today=0,unread=0; const d0=new Date(); d0.setHours(0,0,0,0);
+  LEADSRC.forEach(([arr,keyf])=>(window[arr]||[]).forEach(r=>{ total++; if(r.createdAt>=d0.getTime()) today++; if(!readSet.has(keyf(r))) unread++; }));
+  [['kTotal',total],['kToday',today],['kUnread',unread]].forEach(([id,v])=>{ const el=document.getElementById(id); if(el) countTo(el,v); });
+  window._hud={total,unread}; renderTerm();
+}
+(function(){
+  const _u=updateOverview; updateOverview=function(){ _u(); hudStats(); };
+  const _g=goTab; goTab=function(t){ _g(t); window.goTab=goTab; if(t==='overview') typeTerm(); };
+  window.goTab=goTab;
+  const g=document.getElementById('greet'); if(g){ const h=new Date().getHours(); g.innerText=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Admin'; }
+  function tick(){
+    const c=document.getElementById('sysClock'); if(c) c.innerText=new Date().toLocaleTimeString('en-IN',{hour12:false});
+    const lv=document.getElementById('liveCount'), v=lv?lv.innerText:'0';
+    ['ovLive','kLive'].forEach(id=>{ const e=document.getElementById(id); if(e&&e.innerText!==v) e.innerText=v; });
+  }
+  tick(); setInterval(tick,1000); typeTerm(); hudStats();
+  /* matrix rain behind the terminal */
+  let drops=[];
+  (function rain(){
+    const c=document.getElementById('rain'); if(!c) return;
+    const on=document.getElementById('view-overview').classList.contains('active');
+    if(!on||!c.clientWidth||matchMedia('(prefers-reduced-motion:reduce)').matches){ setTimeout(rain,600); return; }
+    const w=c.clientWidth,h=c.clientHeight;
+    if(c.width!==w||c.height!==h){ c.width=w; c.height=h; drops=Array.from({length:Math.floor(w/14)},()=>Math.random()*h/14); }
+    const x=c.getContext('2d'); x.fillStyle='rgba(13,10,7,.14)'; x.fillRect(0,0,w,h); x.font='12px monospace';
+    drops.forEach((y,i)=>{ x.fillStyle=Math.random()>.94?'rgba(230,191,110,.9)':'rgba(62,220,122,.7)'; x.fillText('01<>/{}$#'[Math.floor(Math.random()*9)],i*14,y*14); drops[i]=(y*14>h&&Math.random()>.96)?0:y+1; });
+    setTimeout(rain,70);
+  })();
+})();
+/* chart loop stays alive (scanning sweep) while Home is open */
+(function(){ const _a=animCharts;
+  animCharts=function(){ const t0=performance.now(); cancelAnimationFrame(chT); let last=0;
+    (function f(t){ const p=Math.min(1,(t-t0)/900), e=1-Math.pow(1-p,3); if(t-last>30||p<1){ drawCharts(e); if(!CHghost&&p>=1) sweep(); last=t; }
+      if(document.getElementById('view-overview').classList.contains('active')) chT=requestAnimationFrame(f); })(t0); };
+  function sweep(){ const c=document.getElementById('candle'), x=c.getContext('2d'), w=c.clientWidth, h=c.clientHeight, sx=8+((performance.now()/14)%(w-38)), g=x.createLinearGradient(sx-50,0,sx,0);
+    g.addColorStop(0,'rgba(230,191,110,0)'); g.addColorStop(1,'rgba(230,191,110,.22)'); x.fillStyle=g; x.fillRect(sx-50,14,50,h-38); x.fillStyle='rgba(230,191,110,.7)'; x.fillRect(sx-1,14,1.5,h-38); }
+})();
+
+/* =====================================================================
+   VIDEOS — added as the LAST section. Nothing above was changed except:
+   'videos' added to the read-only-tab list (no + button), one tab, one stat card.
+   Data lives in Firebase → "videos"; the user panel listens live.
+   ===================================================================== */
+window.allVideos = [];
+db.ref('videos').on('value', snap=>{
+  const list = [];
+  if(snap.exists()){
+    snap.forEach(v=>{ try{ list.push({id:v.key, ...v.val()}); }catch(e){ console.error('Skipped bad video record ('+v.key+'):', e); } });
+  }
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  window.allVideos = list;
+  renderVideos();
+}, err=>{ console.error('videos listener error:', err); toast('Could not load videos — ' + describeErr(err), true); });
+
+
+/* ---- Link detection: turns any pasted video link into something that plays INSIDE the website ---- */
+function vidLinkInfo(raw){
+  let url = String(raw||'').trim(); const um = url.match(/https?:\/\/[^\s]+/i); url = um ? um[0] : url;
+  let m;
+  if(!/^https?:\/\//i.test(url)) return null;
+  if((m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/i)))
+    return {p:'youtube', label:'YouTube', url, auto:true, embed:'https://www.youtube.com/embed/'+m[1]+'?autoplay=1&rel=0&playsinline=1'};
+  if((m = url.match(/vimeo\.com\/(?:.*\/)?(\d{6,})/i)))
+    return {p:'vimeo', label:'Vimeo', url, embed:'https://player.vimeo.com/video/'+m[1]+'?autoplay=1'};
+  if((m = url.match(/instagram\.com\/(?:[\w.]+\/)?(reel|reels|p|tv)\/([\w-]+)/i)))
+    return {p:'instagram', label:'Instagram', url, social:true, embed:'https://www.instagram.com/'+(m[1].toLowerCase()==='reels'?'reel':m[1].toLowerCase())+'/'+m[2]+'/embed/'};
+  if(/(?:facebook\.com\/(?:.*\/)?(?:videos?|reels?|watch|share\/[vr])|fb\.watch\/)/i.test(url))
+    return {p:'facebook', label:'Facebook', url, embed:'https://www.facebook.com/plugins/video.php?href='+encodeURIComponent(url)+'&show_text=false&autoplay=true'};
+  if((m = url.match(/pinterest\.[a-z.]+\/pin\/(?:[\w-]+--)?(\d+)/i)))
+    return {p:'pinterest', label:'Pinterest', url, social:true, embed:'https://assets.pinterest.com/ext/embed.html?id='+m[1]};
+  if(/pin\.it\//i.test(url)) return {p:'bad', label:'Pinterest short link', url, bad:'Pinterest short links (pin.it) cannot be played. Open the pin, copy the full pinterest.com/pin/... link and paste that.'};
+  if((m = url.match(/tiktok\.com\/.*\/video\/(\d+)/i)))
+    return {p:'tiktok', label:'TikTok', url, social:true, embed:'https://www.tiktok.com/embed/v2/'+m[1]};
+  if(/vm\.tiktok\.com|vt\.tiktok\.com/i.test(url)) return {p:'bad', label:'TikTok short link', url, bad:'TikTok short links cannot be played. Open the video, copy the full tiktok.com/@name/video/... link and paste that.'};
+  if((m = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/i)))
+    return {p:'drive', label:'Google Drive', url, embed:'https://drive.google.com/file/d/'+m[1]+'/preview'};
+  if(/res\.cloudinary\.com\/.+\/video\/upload\//i.test(url) || /\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i.test(url))
+    return {p:'file', label:'Video file', url, auto:true};
+  return null;
+}
+function vidYtId(url){ const m = String(url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m?m[1]:''; }
+function vidIsCloudinary(url){ return /res\.cloudinary\.com\/.+\/video\/upload\//.test(String(url||'')); }
+function vidThumb(v){
+  if(v.thumbUrl) return v.thumbUrl;
+  const yt = vidYtId(v.videoUrl);
+  if(yt) return 'https://img.youtube.com/vi/'+yt+'/hqdefault.jpg';
+  if(vidIsCloudinary(v.videoUrl)) return v.videoUrl.replace('/video/upload/','/video/upload/so_1,f_jpg,q_auto,w_400/').replace(/\.[a-z0-9]+(\?.*)?$/i,'.jpg');
+  return '';
+}
+function vidFmtDur(sec){
+  sec = Math.round(Number(sec)||0); if(sec<=0) return '';
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60, ss=String(s).padStart(2,'0');
+  return h>0 ? h+':'+String(m).padStart(2,'0')+':'+ss : m+':'+ss;
+}
+function parseDur(str){           // "12:45", "1:02:10" or plain seconds
+  str = String(str||'').trim(); if(!str) return 0;
+  if(/^\d+$/.test(str)) return Number(str);
+  const p = str.split(':').map(x=>Number(x));
+  if(p.some(isNaN) || p.length>3) return 0;
+  return p.reduce((a,x)=>a*60+x, 0);
+}
+function vidCardHTML(v){
+  try{
+    const enabled = v.enabled !== false, isShort = v.type==='short';
+    const t = vidThumb(v);
+    const media = t ? `<img src="${esc(t)}" onerror="this.style.display='none'">`
+      : (v.videoUrl && !vidYtId(v.videoUrl) ? `<video src="${esc(v.videoUrl)}#t=0.8" preload="metadata" muted></video>` : '<i class="fas fa-film"></i>');
+    return `<div class="card"><div class="item-row">
+      <div class="vid-th ${isShort?'s':'l'}">${media}</div>
+      <div class="item-info">
+        <h3>${esc(v.title)||'(no title)'}</h3>
+        <p>${esc(v.category||'General')}${vidLinkInfo(v.videoUrl)&&vidLinkInfo(v.videoUrl).p!=='file'?' · '+esc(vidLinkInfo(v.videoUrl).label):''}</p>
+        <p>${enabled?'Live on site':'Hidden'} · ${Number(v.views)||0} views</p>
+      </div>
+      <div class="item-actions">
+        <button class="mini-btn tog ${enabled?'on':''}" onclick="toggleEnabled('videos','${v.id}',${enabled})" title="Show/Hide"><i class="fas fa-eye${enabled?'':'-slash'}"></i></button>
+        <button class="mini-btn edit" onclick="editVideo('${v.id}')"><i class="fas fa-pen"></i></button>
+        <button class="mini-btn del" onclick="deleteItem('videos','${v.id}','video')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div></div>`;
+  }catch(e){ console.error('Could not render video card', v && v.id, e); return ''; }
+}
+function renderVideos(){
+  try{
+    const all = window.allVideos||[];
+    const shorts = all.filter(v=>v.type==='short'), longs = all.filter(v=>v.type!=='short');
+    document.getElementById('vidCount').innerText = all.length;
+    document.getElementById('vidShortCount').innerText = shorts.length;
+    document.getElementById('vidLongCount').innerText = longs.length;
+    document.getElementById('vidShortList').innerHTML = shorts.length ? shorts.map(vidCardHTML).join('') : emptyState('fa-mobile-screen-button','No shorts yet','Tap “Add Short” above');
+    document.getElementById('vidLongList').innerHTML = longs.length ? longs.map(vidCardHTML).join('') : emptyState('fa-film','No long videos yet','Tap “Add Long Video” above');
+    try{ updateOverview(); }catch(e){}
+  }catch(err){ console.error('renderVideos failed:', err); }
+}
+function editVideo(id){
+  const v = window.allVideos.find(x=>x.id===id);
+  if(!v){ toast('Could not find that video — try refreshing', true); return; }
+  openSheet('video', id, {...v, vtype:v.type||'long', __editing:true, id});
+}
+
+/* ---- sheet ---- */
+window._vidMode = 'file';
+function videoSheetHTML(d){
+  d = d || {};
+  const vtype = d.vtype || d.type || 'long';
+  const isShort = vtype==='short';
+  const linkMode = d.__editing && d.videoUrl && !vidIsCloudinary(d.videoUrl);
+  window._vidMode = linkMode ? 'link' : 'file';
+  const cats = (window.allCategories||[]).map(c=>c.name);
+  if(d.category && !cats.includes(d.category)) cats.push(d.category);
+  const oldPrev = d.__editing && d.videoUrl && vidIsCloudinary(d.videoUrl) ? `<div class="preview-thumb" style="width:${isShort?'50px':'100px'};height:${isShort?'88px':'56px'};"><video src="${esc(d.videoUrl)}#t=0.5" muted preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video></div>` : '';
+  return `
+    <div class="sheet-handle"></div>
+    <h2>${d.__editing?'Edit ':'Add '}${isShort?'short (9:16)':'long video (16:9)'}</h2>
+    <input type="hidden" id="f-vtype" value="${isShort?'short':'long'}">
+    <span class="vid-type-pill"><i class="fas ${isShort?'fa-mobile-screen-button':'fa-film'}"></i>${isShort?'Vertical · 9:16':'Horizontal · 16:9'}</span>
+
+    <div class="field">
+      <label>Video source</label>
+      <div class="vid-mode">
+        <button type="button" id="vm-file" class="${linkMode?'':'on'}" onclick="setVidMode('file')"><i class="fas fa-upload"></i> Upload file</button>
+        <button type="button" id="vm-link" class="${linkMode?'on':''}" onclick="setVidMode('link')"><i class="fas fa-link"></i> Paste link</button>
+      </div>
+      <div id="vidBoxFile" style="${linkMode?'display:none':''}">
+        <div class="upload-box" id="ub-vidfile">
+          <input type="file" accept="video/*" onchange="handleSingleFile(this,'vidfile'); vidReadDuration(this.files[0]);">
+          <div class="upload-icon"><i class="fas fa-video"></i></div>
+          <div><strong>Tap to choose video</strong><br><small>Any length — big files upload in parts automatically</small></div>
+        </div>
+        <div class="upload-err-text" id="ue-vidfile">Please choose a video before saving</div>
+        <div class="preview-strip" id="pv-vidfile">${oldPrev}</div>
+        <div class="progress-wrap" id="pg-vidfile"><div class="progress-bar" id="pb-vidfile"></div></div>
+        <div class="hint" id="vidUpInfo"></div>
+      </div>
+      <div id="vidBoxLink" style="${linkMode?'':'display:none'}">
+        <input type="text" id="f-vidurl" placeholder="YouTube link or direct .mp4 link" value="${linkMode?esc(d.videoUrl):''}">
+        <div class="hint" id="vidLinkHint">Paste a YouTube, Instagram, Facebook, Pinterest, TikTok, Vimeo or Google Drive link, or a direct .mp4 link. The video plays inside your website. Add a banner for everything except YouTube.</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Video banner / thumbnail <span style="font-weight:400;color:var(--muted);">(needed for Instagram, Facebook, Pinterest, TikTok, Vimeo links — optional for uploads and YouTube)</span></label>
+      <div class="upload-box" id="ub-vidthumb">
+        <input type="file" accept="image/*" onchange="handleSingleFile(this,'vidthumb')">
+        <div class="upload-icon"><i class="fas fa-image"></i></div>
+        <div><strong>Tap to choose banner</strong><br><small>${isShort?'9:16 vertical image':'16:9 horizontal image'} works best</small></div>
+      </div>
+      <div class="preview-strip" id="pv-vidthumb">${d.thumbUrl?`<div class="preview-thumb"><img src="${esc(d.thumbUrl)}"></div>`:''}</div>
+      <div class="progress-wrap" id="pg-vidthumb"><div class="progress-bar" id="pb-vidthumb"></div></div>
+    </div>
+
+    <div class="field"><label>Title</label><input type="text" id="f-vidtitle" placeholder="e.g. Modern Warehouse Tour" value="${esc(d.title)}"></div>
+    <div class="field">
+      <label>Category</label>
+      <select id="f-vidcat"><option value="">General</option>${cats.map(n=>`<option value="${esc(n)}" ${d.category===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveVideo('${d.id||''}')">${d.__editing?'Save changes':'Publish video'}</button>
+    </div>`;
+}
+(function(){
+  const _b = buildSheetHTML;
+  buildSheetHTML = function(type, d){ return type==='video' ? videoSheetHTML(d) : _b(type, d); };
+})();
+function setVidMode(m){
+  window._vidMode = m;
+  document.getElementById('vm-file').classList.toggle('on', m==='file');
+  document.getElementById('vm-link').classList.toggle('on', m==='link');
+  document.getElementById('vidBoxFile').style.display = m==='file' ? '' : 'none';
+  document.getElementById('vidBoxLink').style.display = m==='link' ? '' : 'none';
+}
+function vidReadDuration(file){
+  if(!file) return;
+  const info = document.getElementById('vidUpInfo');
+  if(info) info.innerText = file.name + ' · ' + (file.size/1048576).toFixed(1) + ' MB';
+}
+
+/* ---- Cloudinary upload: normal for small files, chunked (20 MB parts) for big ones ---- */
+function cldChunk(blob, start, end, total, uid, name, onLoaded){
+  return new Promise((resolve, reject)=>{
+    let tries = 0;
+    const send = ()=>{
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`);
+      xhr.setRequestHeader('X-Unique-Upload-Id', uid);
+      xhr.setRequestHeader('Content-Range', `bytes ${start}-${end}/${total}`);
+      xhr.upload.onprogress = e=>{ if(e.lengthComputable) onLoaded(e.loaded); };
+      xhr.onload = ()=>{
+        let res = null; try{ res = JSON.parse(xhr.responseText); }catch(e){}
+        if(xhr.status>=200 && xhr.status<300) resolve(res||{});
+        else reject(res && res.error ? res.error.message : 'Upload failed ('+xhr.status+')');
+      };
+      xhr.onerror = ()=>{ if(++tries<=2) setTimeout(send, 1500*tries); else reject('Network error during upload'); };
+      const fd = new FormData();
+      fd.append('file', blob, name);
+      fd.append('upload_preset', UPLOAD_PRESET);
+      xhr.send(fd);
+    };
+    send();
+  });
+}
+async function uploadVideoSmart(file, key){
+  if(file.size <= 90*1024*1024) return uploadWithProgress(file, key);
+  const pg = document.getElementById('pg-'+key), pb = document.getElementById('pb-'+key);
+  if(pg) pg.style.display = 'block';
+  const CHUNK = 20*1024*1024, total = file.size, uid = 'vh'+Date.now()+Math.random().toString(36).slice(2,10);
+  let start = 0, last = null;
+  try{
+    while(start < total){
+      const end = Math.min(start+CHUNK, total);
+      const s0 = start;
+      last = await cldChunk(file.slice(s0, end), s0, end-1, total, uid, file.name, loaded=>{ if(pb) pb.style.width = Math.round((s0+loaded)/total*100)+'%'; });
+      start = end;
+    }
+  } finally { if(pg) pg.style.display = 'none'; }
+  if(!last || !last.secure_url) throw new Error('Upload did not finish — please try again');
+  return last;
+}
+
+async function saveVideo(id){
+  const vtype = document.getElementById('f-vtype').value==='short' ? 'short' : 'long';
+  const title = document.getElementById('f-vidtitle').value.trim();
+  if(!title){ toast('Please enter a title', true); return; }
+  const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = 'Uploading...';
+  const reset = t=>{ btn.disabled=false; btn.innerText = t || (id?'Save changes':'Publish video'); };
+  try{
+    const old = editContext && editContext.data || {};
+    let videoUrl = old.videoUrl || '';
+    let needThumb = false;
+    if(window._vidMode==='link'){
+      const info = vidLinkInfo(document.getElementById('f-vidurl').value);
+      if(!info){ toast('This link is not supported. Use YouTube, Instagram, Facebook, Pinterest, TikTok, Vimeo, Google Drive or a direct .mp4 link', true); reset(); return; }
+      if(info.bad){ toast(info.bad, true); reset(); return; }
+      videoUrl = info.url;
+      needThumb = !info.auto;
+    }else if(pendingFiles.vidfile){
+      const res = await uploadVideoSmart(pendingFiles.vidfile, 'vidfile');
+      videoUrl = res.secure_url;
+    }else if(id && old.videoUrl && vidIsCloudinary(old.videoUrl)){
+      videoUrl = old.videoUrl;
+    }else{ videoUrl = ''; }
+    if(!videoUrl){ flashUploadError('vidfile'); reset(); return; }
+    let thumbUrl = old.thumbUrl || '';
+    if(needThumb && !pendingFiles.vidthumb && !thumbUrl){
+      toast('Please add a banner image — this link type has no automatic thumbnail', true); reset(); return;
+    }
+    if(pendingFiles.vidthumb){
+      const r = await uploadWithProgress(pendingFiles.vidthumb, 'vidthumb');
+      thumbUrl = r.secure_url;
+    }
+    const payload = {
+      type: vtype, title,
+      category: document.getElementById('f-vidcat').value,
+      videoUrl, thumbUrl,
+      location: null, duration: null,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    if(id){ await db.ref('videos/'+id).update(payload); toast('Video updated'); }
+    else{
+      payload.enabled = true;
+      payload.createdAt = firebase.database.ServerValue.TIMESTAMP;
+      await db.ref('videos').push(payload);
+      toast('Video published — live on the user panel now');
+    }
+    closeSheet();
+  }catch(err){ console.error('Video save failed:', err); permHelp(err); reset(); }
+}
+</script>
+</body>
+</html>
